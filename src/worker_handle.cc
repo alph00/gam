@@ -87,6 +87,10 @@ int WorkerHandle::SendRequest(WorkRequest* wr) {
   epicAssert(*(int* )notify_buf == 1);
   wr->fd = recv_pipe[1];  //for legacy code
   wr->notify_buf = this->notify_buf;
+#ifdef USE_PTHREAD_COND
+  wr->cond = &(this->cond);
+  wr->cond_lock = &(this->cond_lock);
+#endif
   epicLog(LOG_DEBUG,
       "workid = %d, wr->notify_buf = %d, wr->op = %d, wr->flag = %d, wr->status = %d, wr->addr = %lx, wr->size = %d, wr->fd = %d",
       worker->GetWorkerId(), *wr->notify_buf, wr->op, wr->flag, wr->status,
