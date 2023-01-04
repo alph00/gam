@@ -3,7 +3,7 @@ INCLUDE = -I../include -I../lib/libcuckoo/src -I../lib/libcuckoo/cityhash-1.1.1/
 #INCLUDE = -I../include -I../lib/libcuckoo/src -I../lib/libcuckoo/cityhash-1.1.1/src -I/users/zhongle/local/include
 #LIBS = ../src/libgalloc.a -libverbs -lpthread ../lib/libcuckoo/cityhash-1.1.1/src/.libs/libcityhash.a /users/zhongle/local/lib/libboost_thread.so /users/zhongle/local/lib/libboost_system.so
 LIBS = ./libgalloc.a -libverbs -lpthread ../lib/libcuckoo/cityhash-1.1.1/src/.libs/libcityhash.a -lboost_thread -lboost_system
-CFLAGS += -rdynamic 
+CFLAGS += -rdynamic
 ifdef dht
 	CFLAGS += -DDHT
 endif

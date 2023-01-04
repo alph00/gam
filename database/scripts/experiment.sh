@@ -8,10 +8,12 @@ set -o nounset
 # hosts_file specify a list of host names and port numbers, with the host names in the first column
 hosts_file="../tpcc/config.txt"
 # specify your directory for log files
-output_dir="/data/wentian"
+#output_dir="/data/wentian"
+output_dir="/home/rdmatest/dev/gam-logs"
 
 # working environment
-proj_dir="~/programs/gam/code"
+#proj_dir="~/programs/gam/code"
+proj_dir="/home/rdmatest/dev/gam"
 bin_dir="${proj_dir}/database/tpcc"
 script_dir="{proj_dir}/database/scripts"
 ssh_opts="-o StrictHostKeyChecking=no"
@@ -43,7 +45,8 @@ launch () {
 }
 
 run_tpcc () {
-  dist_ratios=(0 10 20 30 40 50 60 70 80 90 100)
+#  dist_ratios=(0 10 20 30 40 50 60 70 80 90 100)
+  dist_ratios=(0 20 40 60 80 100)
   for dist_ratio in ${dist_ratios[@]}; do
     launch ${dist_ratio}
   done
@@ -73,12 +76,13 @@ vary_temp_locality () {
 
 auto_fill_params () {
   # so that users don't need to specify parameters for themselves
-  USER_ARGS="-p11111 -sf32 -sf10 -c4 -t200000"
+  USER_ARGS="-p11111 -sf12 -sf1 -c4 -t200000"
 }
 
 auto_fill_params
 # run standard tpcc
 run_tpcc
+# launch 0
 
 # vary_read_ratios
 #vary_temp_locality
