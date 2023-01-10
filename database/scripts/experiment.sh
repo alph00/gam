@@ -76,7 +76,33 @@ vary_temp_locality () {
 
 auto_fill_params () {
   # so that users don't need to specify parameters for themselves
-  USER_ARGS="-p11111 -sf12 -sf1 -c4 -t200000"
+  USER_ARGS="-p11111 -sf12 -sf1 -c8 -t200000"
+}
+
+launch_single_node () {
+  core_cnt=$1
+  output_file="${output_dir}/core_${core_cnt}_tpcc.log"
+  script="cd ${bin_dir} && ./tpcc ${USER_ARGS} > ${output_file} 2>&1"
+  
+  echo "start master: ssh ${ssh_opts} ${master_host} "$script" &"
+  ssh ${ssh_opts} ${master_host} "$script" &
+  sleep 3
+  for ((i=1;i<${#hosts[@]};i++)); do
+    host=${hosts[$i]}
+    echo "start worker: ssh ${ssh_opts} ${host} "$script" &"
+    ssh ${ssh_opts} ${host} "$script" &
+    sleep 1
+  done
+  wait
+  echo "done for ${core_cnt}" 
+}
+
+run_tpcc_single_node () {
+  core_cnts=(1 5 10 15 20)
+  for core_cnt in ${core_cnts[@]}; do
+    USER_ARGS="-p11111 -sf${core_cnt} -sf10 -c${core_cnt} -t200000"
+    launch_single_node ${core_cnt}
+  done
 }
 
 auto_fill_params
@@ -86,3 +112,6 @@ run_tpcc
 
 # vary_read_ratios
 #vary_temp_locality
+
+# single node, vary core count
+# run_tpcc_single_node

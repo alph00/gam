@@ -19,6 +19,7 @@ using namespace std;
 
 //#define FINE_SLAB_LOCK
 
+//#define ENABLE_STATISTICS
 /*
  * test switch
  */

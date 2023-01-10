@@ -445,6 +445,7 @@ class TpccSource : public BenchmarkSource {
             scale_params_->num_customers_per_district_);
       }
     }
+    // TODO(weihaosun): PaymentParam has a std::string-type field, memcpy may cause memory fault
     memcpy(&last_payment_param_, param, sizeof(PaymentParam));
 
     param->warehouse_access_type_ =

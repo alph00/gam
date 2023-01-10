@@ -102,9 +102,11 @@ namespace Database {
 			}
 			else {
 				// insert_only or delete_only
-				BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WLOCK);
-				WLockRecord(access_ptr->access_addr_, table_record->GetSerializeSize());
-				END_GAM_OPERATION_MEASURE(thread_id_, GAM_WLOCK);
+				if (access_ptr->access_addr_) {
+					BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WLOCK);
+					WLockRecord(access_ptr->access_addr_, table_record->GetSerializeSize());
+					END_GAM_OPERATION_MEASURE(thread_id_, GAM_WLOCK);
+				}
 			}
 		}
 
@@ -174,7 +176,9 @@ namespace Database {
 			for (size_t i = 0; i < access_list_.access_count_; ++i) {
 				Access *access_ptr = access_list_.GetAccess(i);
 				// unlock
-				this->UnLockRecord(access_ptr->access_addr_, access_ptr->access_record_->GetSerializeSize());
+				if (access_ptr->access_addr_) {
+					this->UnLockRecord(access_ptr->access_addr_, access_ptr->access_record_->GetSerializeSize());
+				}
 			}
 			END_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
 
@@ -199,7 +203,9 @@ namespace Database {
 			for (size_t i = 0; i < access_list_.access_count_; ++i) {
 				Access *access_ptr = access_list_.GetAccess(i);
 				// unlock
-				this->UnLockRecord(access_ptr->access_addr_, access_ptr->access_record_->GetSerializeSize());
+				if (access_ptr->access_addr_) {
+					this->UnLockRecord(access_ptr->access_addr_, access_ptr->access_record_->GetSerializeSize());
+				}
 				--lock_count;
 				if (lock_count == 0) {
 					break;

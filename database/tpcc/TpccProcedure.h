@@ -232,106 +232,110 @@ class NewOrderProcedure : public StoredProcedure {
     double c_discount = 0;
     customer_record->GetColumn(15, &c_discount);
     // "createNewOrder": "INSERT INTO NEW_ORDER (NO_O_ID, NO_D_ID, NO_W_ID) VALUES (?, ?, ?)"
-    BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
+    // BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
     // GAddr new_order_addr = gallocators[thread_id_]->Malloc(
     //     transaction_manager_->storage_manager_->
     //     tables_[NEW_ORDER_TABLE_ID]->GetSchemaSize());
     // NOTE(weihaosun): for concurrency control, we need to store table_record rather than raw record
-    GAddr new_order_addr = gallocators[thread_id_]->Malloc(
-      transaction_manager_->storage_manager_->table_record_sizes_[NEW_ORDER_TABLE_ID]);
-    END_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
-    Record *new_order_record = new Record(
-      transaction_manager_->storage_manager_->tables_[NEW_ORDER_TABLE_ID]->GetSchema());
-    new_order_record->SetColumn(0, (char*) (&d_next_o_id));
-    new_order_record->SetColumn(1, (char*) (&new_order_param->d_id_));
-    new_order_record->SetColumn(2, (char*) (&new_order_param->w_id_));
-    new_order_record->SetVisible(true);
-    if (new_order_param->new_order_access_type_ != READ_ONLY) {
-      BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
-      new_order_record->Serialize(new_order_addr, gallocators[thread_id_]);
-      END_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
-    }
-    IndexKey new_order_key = GetNewOrderPrimaryKey(d_next_o_id,
-                                                   new_order_param->d_id_,
-                                                   new_order_param->w_id_);
-    DB_QUERY(
-        InsertRecord(&context_, NEW_ORDER_TABLE_ID, 
-          &new_order_key, 1, new_order_record, new_order_addr));
+    // NOTE(weihaosun): for general cc benchmarks, insert is omitted. Thus, we move Gam Malloc to Commit Phase
+    // GAddr new_order_addr = gallocators[thread_id_]->Malloc(
+    //   transaction_manager_->storage_manager_->table_record_sizes_[NEW_ORDER_TABLE_ID]);
+    // END_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
+    // GAddr new_order_addr = Gnullptr;
+    // Record *new_order_record = new Record(
+    //   transaction_manager_->storage_manager_->tables_[NEW_ORDER_TABLE_ID]->GetSchema());
+    // new_order_record->SetColumn(0, (char*) (&d_next_o_id));
+    // new_order_record->SetColumn(1, (char*) (&new_order_param->d_id_));
+    // new_order_record->SetColumn(2, (char*) (&new_order_param->w_id_));
+    // new_order_record->SetVisible(true);
+    // if (new_order_param->new_order_access_type_ != READ_ONLY) {
+    //   // BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
+    //   // new_order_record->Serialize(new_order_addr, gallocators[thread_id_]);
+    //   // END_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
+    // }
+    // IndexKey new_order_key = GetNewOrderPrimaryKey(d_next_o_id,
+    //                                                new_order_param->d_id_,
+    //                                                new_order_param->w_id_);
+    // DB_QUERY(
+    //     InsertRecord(&context_, NEW_ORDER_TABLE_ID, 
+    //       &new_order_key, 1, new_order_record, new_order_addr));
 
-    bool all_local = true;
-    for (auto & w_id : new_order_param->i_w_ids_) {
-      all_local = (all_local && (new_order_param->w_id_ == w_id));
-    }
-    // "createOrder": "INSERT INTO ORDERS (O_ID, O_D_ID, O_W_ID, O_C_ID, O_ENTRY_D, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
-    // GAddr order_addr = gallocators[thread_id_]->Malloc(
-    //     transaction_manager_->storage_manager_->
-    //     tables_[ORDER_TABLE_ID]->GetSchemaSize());
-    GAddr order_addr = gallocators[thread_id_]->Malloc(
-      transaction_manager_->storage_manager_->table_record_sizes_[ORDER_TABLE_ID]);
-    END_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
-    Record *order_record = new Record(
-      transaction_manager_->storage_manager_->tables_[ORDER_TABLE_ID]->GetSchema());
-    order_record->SetColumn(0, (char*) (&d_next_o_id));
-    order_record->SetColumn(1, (char*) (&new_order_param->c_id_));
-    order_record->SetColumn(2, (char*) (&new_order_param->d_id_));
-    order_record->SetColumn(3, (char*) (&new_order_param->w_id_));
-    order_record->SetColumn(4, (char*) (&new_order_param->o_entry_d_));
-    order_record->SetColumn(5, (char*) (&NULL_CARRIER_ID));
-    order_record->SetColumn(6, (char*) (&new_order_param->ol_cnt_));
-    order_record->SetColumn(7, (char*) (&all_local));
-    order_record->SetVisible(true);
-    if (new_order_param->order_access_type_ != READ_ONLY) {
-      BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
-      order_record->Serialize(order_addr, gallocators[thread_id_]);
-      END_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
-    }
-    IndexKey order_key = GetOrderPrimaryKey(d_next_o_id, new_order_param->d_id_,
-                                            new_order_param->w_id_);
-    DB_QUERY(
-        InsertRecord(&context_, ORDER_TABLE_ID, 
-          &order_key, 1, order_record, order_addr));
+    // bool all_local = true;
+    // for (auto & w_id : new_order_param->i_w_ids_) {
+    //   all_local = (all_local && (new_order_param->w_id_ == w_id));
+    // }
+    // // "createOrder": "INSERT INTO ORDERS (O_ID, O_D_ID, O_W_ID, O_C_ID, O_ENTRY_D, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    // // BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
+    // // GAddr order_addr = gallocators[thread_id_]->Malloc(
+    // //     transaction_manager_->storage_manager_->
+    // //     tables_[ORDER_TABLE_ID]->GetSchemaSize());
+    // // GAddr order_addr = gallocators[thread_id_]->Malloc(
+    // //   transaction_manager_->storage_manager_->table_record_sizes_[ORDER_TABLE_ID]);
+    // // END_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
+    // GAddr order_addr = Gnullptr;
+    // Record *order_record = new Record(
+    //   transaction_manager_->storage_manager_->tables_[ORDER_TABLE_ID]->GetSchema());
+    // order_record->SetColumn(0, (char*) (&d_next_o_id));
+    // order_record->SetColumn(1, (char*) (&new_order_param->c_id_));
+    // order_record->SetColumn(2, (char*) (&new_order_param->d_id_));
+    // order_record->SetColumn(3, (char*) (&new_order_param->w_id_));
+    // order_record->SetColumn(4, (char*) (&new_order_param->o_entry_d_));
+    // order_record->SetColumn(5, (char*) (&NULL_CARRIER_ID));
+    // order_record->SetColumn(6, (char*) (&new_order_param->ol_cnt_));
+    // order_record->SetColumn(7, (char*) (&all_local));
+    // order_record->SetVisible(true);
+    // // if (new_order_param->order_access_type_ != READ_ONLY) {
+    // //   BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
+    // //   order_record->Serialize(order_addr, gallocators[thread_id_]);
+    // //   END_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
+    // // }
+    // IndexKey order_key = GetOrderPrimaryKey(d_next_o_id, new_order_param->d_id_,
+    //                                         new_order_param->w_id_);
+    // DB_QUERY(
+    //     InsertRecord(&context_, ORDER_TABLE_ID, 
+    //       &order_key, 1, order_record, order_addr));
 
-    for (size_t i = 0; i < new_order_param->ol_cnt_; ++i) {
-      int ol_number = i + 1;
-      int ol_i_id = new_order_param->i_ids_[i];
-      int ol_supply_w_id = new_order_param->i_w_ids_[i];
-      int ol_quantity = new_order_param->i_qtys_[i];
-      // "createOrderLine": "INSERT INTO ORDER_LINE (OL_O_ID, OL_D_ID, OL_W_ID, OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID, OL_DELIVERY_D, OL_QUANTITY, OL_AMOUNT, OL_DIST_INFO) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-      BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
-      // GAddr order_line_addr = gallocators[thread_id_]->Malloc(
-      //     transaction_manager_->storage_manager_->
-      //     tables_[ORDER_LINE_TABLE_ID]->GetSchemaSize());
-      GAddr order_line_addr = gallocators[thread_id_]->Malloc(
-        transaction_manager_->storage_manager_->table_record_sizes_[ORDER_LINE_TABLE_ID]);
-      END_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
-      Record *order_line_record = new Record(
-        transaction_manager_->storage_manager_->tables_[ORDER_LINE_TABLE_ID]->GetSchema());
-      order_line_record->SetColumn(0, (char*) (&d_next_o_id));
-      order_line_record->SetColumn(1, (char*) (&new_order_param->d_id_));
-      order_line_record->SetColumn(2, (char*) (&new_order_param->w_id_));
-      order_line_record->SetColumn(3, (char*) (&ol_number));
-      order_line_record->SetColumn(4, (char*) (&ol_i_id));
-      order_line_record->SetColumn(5, (char*) (&ol_supply_w_id));
-      order_line_record->SetColumn(6, (char*) (&new_order_param->o_entry_d_));
-      order_line_record->SetColumn(7, (char*) (&ol_quantity));
-      order_line_record->SetColumn(8, (char*) (&ol_amounts[i]));
-      order_line_record->SetColumn(9, s_dists[i]);
-      order_line_record->SetVisible(true);
-      if (new_order_param->order_line_access_type_[i] != READ_ONLY) {
-        BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
-        order_line_record->Serialize(order_line_addr, gallocators[thread_id_]);
-        END_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
-      }
-      IndexKey order_line_key = GetOrderLinePrimaryKey(d_next_o_id,
-                                                       new_order_param->d_id_,
-                                                       new_order_param->w_id_,
-                                                       ol_number);
-      //order_line_keys[1] = GetOrderLineSecondaryKey(d_next_o_id, new_order_param->d_id_, new_order_param->w_id_);
-      DB_QUERY(
-          InsertRecord(&context_, ORDER_LINE_TABLE_ID, 
-            &order_line_key, 1, order_line_record, order_line_addr));
-    }
+    // for (size_t i = 0; i < new_order_param->ol_cnt_; ++i) {
+    //   int ol_number = i + 1;
+    //   int ol_i_id = new_order_param->i_ids_[i];
+    //   int ol_supply_w_id = new_order_param->i_w_ids_[i];
+    //   int ol_quantity = new_order_param->i_qtys_[i];
+    //   // "createOrderLine": "INSERT INTO ORDER_LINE (OL_O_ID, OL_D_ID, OL_W_ID, OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID, OL_DELIVERY_D, OL_QUANTITY, OL_AMOUNT, OL_DIST_INFO) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    //   // BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
+    //   // // GAddr order_line_addr = gallocators[thread_id_]->Malloc(
+    //   // //     transaction_manager_->storage_manager_->
+    //   // //     tables_[ORDER_LINE_TABLE_ID]->GetSchemaSize());
+    //   // GAddr order_line_addr = gallocators[thread_id_]->Malloc(
+    //   //   transaction_manager_->storage_manager_->table_record_sizes_[ORDER_LINE_TABLE_ID]);
+    //   // END_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
+    //   GAddr order_line_addr = Gnullptr;
+    //   Record *order_line_record = new Record(
+    //     transaction_manager_->storage_manager_->tables_[ORDER_LINE_TABLE_ID]->GetSchema());
+    //   order_line_record->SetColumn(0, (char*) (&d_next_o_id));
+    //   order_line_record->SetColumn(1, (char*) (&new_order_param->d_id_));
+    //   order_line_record->SetColumn(2, (char*) (&new_order_param->w_id_));
+    //   order_line_record->SetColumn(3, (char*) (&ol_number));
+    //   order_line_record->SetColumn(4, (char*) (&ol_i_id));
+    //   order_line_record->SetColumn(5, (char*) (&ol_supply_w_id));
+    //   order_line_record->SetColumn(6, (char*) (&new_order_param->o_entry_d_));
+    //   order_line_record->SetColumn(7, (char*) (&ol_quantity));
+    //   order_line_record->SetColumn(8, (char*) (&ol_amounts[i]));
+    //   order_line_record->SetColumn(9, s_dists[i]);
+    //   order_line_record->SetVisible(true);
+    //   // if (new_order_param->order_line_access_type_[i] != READ_ONLY) {
+    //   //   BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
+    //   //   order_line_record->Serialize(order_line_addr, gallocators[thread_id_]);
+    //   //   END_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
+    //   // }
+    //   IndexKey order_line_key = GetOrderLinePrimaryKey(d_next_o_id,
+    //                                                    new_order_param->d_id_,
+    //                                                    new_order_param->w_id_,
+    //                                                    ol_number);
+    //   //order_line_keys[1] = GetOrderLineSecondaryKey(d_next_o_id, new_order_param->d_id_, new_order_param->w_id_);
+    //   DB_QUERY(
+    //       InsertRecord(&context_, ORDER_LINE_TABLE_ID, 
+    //         &order_line_key, 1, order_line_record, order_line_addr));
+    // }
 
     ret.Memcpy(ret.size_, (char*) (&w_tax), sizeof(w_tax));
     ret.size_ += sizeof(w_tax);
@@ -414,34 +418,35 @@ class PaymentProcedure : public StoredProcedure {
     payment_cnt += 1;
     customer_record->SetColumn(18, &payment_cnt);
     // "insertHistory": "INSERT INTO HISTORY VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
+    // BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
+    // // GAddr history_addr = gallocators[thread_id_]->Malloc(
+    // //     transaction_manager_->storage_manager_->
+    // //     tables_[HISTORY_TABLE_ID]->GetSchemaSize());
     // GAddr history_addr = gallocators[thread_id_]->Malloc(
-    //     transaction_manager_->storage_manager_->
-    //     tables_[HISTORY_TABLE_ID]->GetSchemaSize());
-    GAddr history_addr = gallocators[thread_id_]->Malloc(
-      transaction_manager_->storage_manager_->table_record_sizes_[HISTORY_TABLE_ID]);
-    END_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
-    Record *history_record = new Record(
-      transaction_manager_->storage_manager_->tables_[HISTORY_TABLE_ID]->GetSchema());
-    history_record->SetColumn(0, (char*) (&payment_param->c_id_));
-    history_record->SetColumn(1, (char*) (&payment_param->c_d_id_));
-    history_record->SetColumn(2, (char*) (&payment_param->c_w_id_));
-    history_record->SetColumn(3, (char*) (&payment_param->d_id_));
-    history_record->SetColumn(4, (char*) (&payment_param->w_id_));
-    history_record->SetColumn(5, (char*) (&payment_param->h_date_));
-    history_record->SetColumn(6, (char*) (&payment_param->h_amount_));
-    history_record->SetVisible(true);
-    if (payment_param->history_access_type_ != READ_ONLY) {
-      BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
-      history_record->Serialize(history_addr, gallocators[thread_id_]);
-      END_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
-    }
-    IndexKey history_key = GetHistoryPrimaryKey(payment_param->c_id_,
-                                                payment_param->d_id_,
-                                                payment_param->w_id_);
-    DB_QUERY(
-        InsertRecord(&context_, HISTORY_TABLE_ID, 
-          &history_key, 1, history_record, history_addr));
+    //   transaction_manager_->storage_manager_->table_record_sizes_[HISTORY_TABLE_ID]);
+    // END_GAM_OPERATION_MEASURE(thread_id_, GAM_MALLOC);
+    // GAddr history_addr = Gnullptr;
+    // Record *history_record = new Record(
+    //   transaction_manager_->storage_manager_->tables_[HISTORY_TABLE_ID]->GetSchema());
+    // history_record->SetColumn(0, (char*) (&payment_param->c_id_));
+    // history_record->SetColumn(1, (char*) (&payment_param->c_d_id_));
+    // history_record->SetColumn(2, (char*) (&payment_param->c_w_id_));
+    // history_record->SetColumn(3, (char*) (&payment_param->d_id_));
+    // history_record->SetColumn(4, (char*) (&payment_param->w_id_));
+    // history_record->SetColumn(5, (char*) (&payment_param->h_date_));
+    // history_record->SetColumn(6, (char*) (&payment_param->h_amount_));
+    // history_record->SetVisible(true);
+    // // if (payment_param->history_access_type_ != READ_ONLY) {
+    // //   BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
+    // //   history_record->Serialize(history_addr, gallocators[thread_id_]);
+    // //   END_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
+    // // }
+    // IndexKey history_key = GetHistoryPrimaryKey(payment_param->c_id_,
+    //                                             payment_param->d_id_,
+    //                                             payment_param->w_id_);
+    // DB_QUERY(
+    //     InsertRecord(&context_, HISTORY_TABLE_ID, 
+    //       &history_key, 1, history_record, history_addr));
 
     return transaction_manager_->CommitTransaction(&context_, param, ret);
   }

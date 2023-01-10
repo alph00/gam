@@ -106,13 +106,15 @@ int Worker::ProcessLocalRead(WorkRequest* wr) {
      * is fulfilled in the first trial (i.e., * chache hit)
      */
     epicAssert(wr->is_cache_hit_);
+#ifdef ENABLE_STATISTICS
     if (IsLocal(wr->addr)) {
-        ++no_local_reads_;
-        ++no_local_reads_hit_;
+        no_local_reads_.fetch_add(1, std::memory_order_relaxed);
+        no_local_reads_hit_.fetch_add(1, std::memory_order_relaxed);
     } else {
-        ++no_remote_reads_;
-        ++no_remote_reads_hit_;
+        no_remote_reads_.fetch_add(1, std::memory_order_relaxed);
+        no_remote_reads_hit_.fetch_add(1, std::memory_order_relaxed);
     }
+#endif
   }
 #endif
   return SUCCESS;
@@ -257,8 +259,9 @@ int Worker::ProcessLocalWrite(WorkRequest* wr) {
     if (ret) {
       return REMOTE_REQUEST;
     }
-
-    ++no_remote_writes_direct_hit_;
+#ifdef ENABLE_STATISTICS
+    no_remote_writes_direct_hit_.fetch_add(1, std::memory_order_relaxed);
+#endif
   }
 #ifdef MULTITHREAD
   if (wr->flag & ASYNC || wr->flag & TO_SERVE || wr->flag & FENCE) {
@@ -381,13 +384,15 @@ int Worker::ProcessLocalRLock(WorkRequest* wr) {
 #ifdef MULTITHREAD
   } else {
     epicAssert(wr->is_cache_hit_);
+#ifdef ENABLE_STATISTICS
     if (IsLocal(wr->addr)) {
-        ++no_local_reads_;
-        ++no_local_reads_hit_;
+        no_local_reads_.fetch_add(1, std::memory_order_relaxed);;
+        no_local_reads_hit_.fetch_add(1, std::memory_order_relaxed);;
     } else {
-        ++no_remote_reads_;
-        ++no_remote_reads_hit_;
+        no_remote_reads_.fetch_add(1, std::memory_order_relaxed);;
+        no_remote_reads_hit_.fetch_add(1, std::memory_order_relaxed);;
     }
+#endif
   }
 #endif
   return SUCCESS;
@@ -506,14 +511,18 @@ int Worker::ProcessLocalWLock(WorkRequest* wr) {
 #ifdef MULTITHREAD
   } else {
     epicAssert(wr->is_cache_hit_);
+
+#ifdef ENABLE_STATISTICS
     if (IsLocal(wr->addr)) {
-        ++no_local_writes_;
-        ++no_local_writes_hit_;
+        no_local_writes_.fetch_add(1, std::memory_order_relaxed);;
+        no_local_writes_hit_.fetch_add(1, std::memory_order_relaxed);;
     } else {
-        ++no_remote_writes_;
-        ++no_remote_writes_hit_;
+        no_remote_writes_.fetch_add(1, std::memory_order_relaxed);;
+        no_remote_writes_hit_.fetch_add(1, std::memory_order_relaxed);;
     }
+#endif 
   }
+
 #endif
   return SUCCESS;
 }

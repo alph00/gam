@@ -33,11 +33,14 @@
 
 #define REPORT_CC_TS_ALLOC_TIME_PROFILER \
 	printf("**********BEGIN CC TS ALLOC TIME PROFILING REPORT**********\n"); \
+	long long cc_ts_alloc_time_total = 0; \
 for (int i = 0; i < gThreadCount; ++i){ \
 if (cc_ts_alloc_time_stat_[i] != 0){ \
-	printf("thread_id = %d, elapsed_time = %lld ms\n", i, cc_ts_alloc_time_stat_[i] / 1000 / 1000); \
+	cc_ts_alloc_time_total += cc_ts_alloc_time_stat_[i] / 1000 / 1000; \
+	printf("thread_id = %d, cc_ts_alloc_time = %lld ms\n", i, cc_ts_alloc_time_stat_[i] / 1000 / 1000); \
 } \
 } \
+	printf("\navg cc_ts_alloc_time = %lld ms\n", cc_ts_alloc_time_total / gThreadCount); \
 	printf("**********END CC TS ALLOC TIME PROFILING REPORT**********\n\n"); \
 	delete[] cc_ts_alloc_time_stat_; \
 	cc_ts_alloc_time_stat_ = NULL; \

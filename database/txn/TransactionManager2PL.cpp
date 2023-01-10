@@ -12,10 +12,12 @@ namespace Database {
     BEGIN_PHASE_MEASURE(thread_id_, CC_INSERT);
     // RecordSchema *schema_ptr = storage_manager_->tables_[table_id]->GetSchema();
     TableRecord* table_record = new TableRecord(record);
-    BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_TRY_WLOCK);
-    bool lock_success = TryWLockRecord(data_addr, table_record->GetSerializeSize());
-    END_GAM_OPERATION_MEASURE(thread_id_, GAM_TRY_WLOCK);
-    assert(lock_success == true); // since record is thread local
+    // TODO(weihaosun): no need to wlock now. Even if lock is needed later,
+    // the lock should be put on the primary key rather than the thread local record malloced
+    // BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_TRY_WLOCK);
+    // bool lock_success = TryWLockRecord(data_addr, table_record->GetSerializeSize());
+    // END_GAM_OPERATION_MEASURE(thread_id_, GAM_TRY_WLOCK);
+    // assert(lock_success == true); // since record is thread local
     record->SetVisible(true);
     Access* access = access_list_.NewAccess();
     access->access_type_ = INSERT_ONLY;
@@ -103,9 +105,11 @@ namespace Database {
       }
       END_GAM_OPERATION_MEASURE(thread_id_, GAM_WRITE);
       // unlock
-      BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
-      this->UnLockRecord(access->access_addr_, table_record->GetSerializeSize());
-      END_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
+      if (access->access_addr_) {
+        BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
+        this->UnLockRecord(access->access_addr_, table_record->GetSerializeSize());
+        END_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
+      }
     }
     //GC
     for (size_t i = 0; i < access_list_.access_count_; ++i) {
@@ -133,15 +137,18 @@ namespace Database {
       // Record *record = access->access_record_;
       TableRecord* table_record = access->access_record_;
       // unlock
-      BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
-      this->UnLockRecord(access->access_addr_, table_record->GetSerializeSize());
-      END_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
-      if (access->access_type_ == INSERT_ONLY) {
-        table_record->record_->SetVisible(false);
-        BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_FREE);
-        gallocators[thread_id_]->Free(access->access_addr_);
-        END_GAM_OPERATION_MEASURE(thread_id_, GAM_FREE);
+      if (access->access_addr_) {
+        BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
+        this->UnLockRecord(access->access_addr_, table_record->GetSerializeSize());
+        END_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
       }
+      // NOTE(weihaosun): currently we don't do GAM::MAlloc for INSERT_ONLY records, thus no need to Free
+      // if (access->access_type_ == INSERT_ONLY) {
+      //   table_record->record_->SetVisible(false);
+      //   BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_FREE);
+      //   gallocators[thread_id_]->Free(access->access_addr_);
+      //   END_GAM_OPERATION_MEASURE(thread_id_, GAM_FREE);
+      // }
     }
     //GC
     for (size_t i = 0; i < access_list_.access_count_; ++i) {

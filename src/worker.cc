@@ -687,29 +687,31 @@ void Worker::ProcessFenced(Fence* fence) {
 
 int Worker::Notify(WorkRequest* wr) {
 
+#ifdef ENABLE_STATISTICS
   if (wr->op == WRITE || wr->op == WLOCK) {
     if (IsLocal(wr->addr)) {
-      ++no_local_writes_;
+      no_local_writes_.fetch_add(1, std::memory_order_relaxed);;
       if (wr->is_cache_hit_)
-        ++no_local_writes_hit_;
+        no_local_writes_hit_.fetch_add(1, std::memory_order_relaxed);;
     } else {
-      ++no_remote_writes_;
+      no_remote_writes_.fetch_add(1, std::memory_order_relaxed);;
       if (wr->is_cache_hit_)
-        ++no_remote_writes_hit_;
+        no_remote_writes_hit_.fetch_add(1, std::memory_order_relaxed);;
     }
   } 
 
   if (wr->op == READ || wr->op == RLOCK) {
     if (IsLocal(wr->addr)) {
-      ++no_local_reads_;
+      no_local_reads_.fetch_add(1, std::memory_order_relaxed);;
       if (wr->is_cache_hit_)
-        ++no_local_reads_hit_;
+        no_local_reads_hit_.fetch_add(1, std::memory_order_relaxed);;
     } else {
-      ++no_remote_reads_;
+      no_remote_reads_.fetch_add(1, std::memory_order_relaxed);;
       if (wr->is_cache_hit_)
-        ++no_remote_reads_hit_;
+        no_remote_reads_hit_.fetch_add(1, std::memory_order_relaxed);;
     }
-  } 
+  }
+#endif
 
   if (wr->flag & ASYNC) {
     epicAssert(wr->op == WRITE || wr->op == MFENCE || wr->op == UNLOCK);  //currently only writes, mfence and unlock are asynchronous

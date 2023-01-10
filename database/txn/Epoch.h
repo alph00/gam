@@ -50,6 +50,7 @@ namespace Database {
 		void Start() {
 			while (true) {
 				boost::this_thread::sleep(boost::posix_time::milliseconds(40));
+				// TODO(weihaosun): use GFUNC instead of rmw
 				epoch_gallocator_->WLock(epoch_addr_, sizeof(uint64_t));
 				uint64_t cur_epoch;
 				epoch_gallocator_->Read(epoch_addr_, &cur_epoch, sizeof(uint64_t));

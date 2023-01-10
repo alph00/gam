@@ -159,6 +159,7 @@ class Worker : public Server {
 #endif
 
  public:
+  // TODO(weihaosun): use threadlocal counters
   // cahce hit ratio statistics
   // number of local reads absorbed by the cache
   atomic<Size> no_local_reads_;

@@ -20,7 +20,7 @@
 				access->access_addr_ = data_addr;
 				// access->table_id_ = table_id;
 				access->timestamp_ = 0;
-				write_list_.Add(access);
+				// write_list_.Add(access);
 				END_PHASE_MEASURE(thread_id_, CC_INSERT);
 				return true;
 			/*}
@@ -149,10 +149,10 @@
           }
           else if (access_ptr->access_type_ == INSERT_ONLY) {
             assert(commit_ts > access_ptr->timestamp_);
-            table_record->record_->SetVisible(true);
-            // COMPILER_MEMORY_FENCE;
-            content_ref.SetTimestamp(commit_ts);
-            table_record->Serialize(access_addr, gallocators[thread_id_]);
+            // table_record->record_->SetVisible(true);
+            // // COMPILER_MEMORY_FENCE;
+            // content_ref.SetTimestamp(commit_ts);
+            // table_record->Serialize(access_addr, gallocators[thread_id_]);
           }
           else if (access_ptr->access_type_ == DELETE_ONLY) {
             assert(commit_ts > access_ptr->timestamp_);
@@ -179,7 +179,9 @@
 				for (size_t i = 0; i < write_list_.access_count_; ++i){
 					Access *access_ptr = write_list_.GetAccess(i);
           // unlock
-          this->UnLockRecord(access_ptr->access_addr_, access_ptr->access_record_->GetSerializeSize());
+					if (access_ptr->access_addr_) {
+						this->UnLockRecord(access_ptr->access_addr_, access_ptr->access_record_->GetSerializeSize());
+					}
 				}
 				END_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
 
@@ -204,7 +206,9 @@
 				for (size_t i = 0; i < write_list_.access_count_; ++i){
 					Access *access_ptr = write_list_.GetAccess(i);
           // unlock
-          this->UnLockRecord(access_ptr->access_addr_, access_ptr->access_record_->GetSerializeSize());
+					if (access_ptr->access_addr_) {
+						this->UnLockRecord(access_ptr->access_addr_, access_ptr->access_record_->GetSerializeSize());
+					}
 				}
 				END_GAM_OPERATION_MEASURE(thread_id_, GAM_UNLOCK);
 
