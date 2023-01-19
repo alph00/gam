@@ -8,94 +8,85 @@
 
 namespace Database {
 struct Access {
-  Access()
-      : access_record_(nullptr), access_addr_(Gnullptr), timestamp_(0) {
-  }
-  AccessType access_type_;
-  // Record *access_record_;
-  TableRecord* access_record_;
-  GAddr access_addr_;
-  uint64_t timestamp_;
+    Access() : access_record_(nullptr), access_addr_(Gnullptr), timestamp_(0) {}
+    AccessType access_type_;
+    // Record *access_record_;
+    TableRecord *access_record_;
+    GAddr access_addr_;
+    uint64_t timestamp_;
 };
 
-template<int N>
+template <int N>
 class AccessList {
- public:
-  AccessList()
-      : access_count_(0) {
-  }
+   public:
+    AccessList() : access_count_(0) {}
 
-  Access *NewAccess() {
-    assert(access_count_ < N);
-    Access *ret = &(accesses_[access_count_]);
-    ++access_count_;
-    return ret;
-  }
-
-  Access *GetAccess(const size_t &index) {
-    return &(accesses_[index]);
-  }
-
-  void Clear() {
-    access_count_ = 0;
-  }
-
-  void Sort(){
-    std::sort(accesses_, accesses_ + access_count_, GAddrCompFunction);
-  }
-
-  private:
-    static bool CompFunction(Access lhs, Access rhs){
-      return (uint64_t)(lhs.access_record_) < (uint64_t)(rhs.access_record_);
+    Access *NewAccess() {
+        assert(access_count_ < N);
+        Access *ret = &(accesses_[access_count_]);
+        ++access_count_;
+        return ret;
     }
 
-    static bool GAddrCompFunction(Access lhs, Access rhs){
-      return lhs.access_addr_ < rhs.access_addr_;
+    Access *GetAccess(const size_t &index) { return &(accesses_[index]); }
+
+    void Clear() { access_count_ = 0; }
+
+    void Sort() {
+        std::sort(accesses_, accesses_ + access_count_, GAddrCompFunction);
     }
 
- public:
-  size_t access_count_;
- private:
-  Access accesses_[N];
+   private:
+    static bool CompFunction(Access lhs, Access rhs) {
+        return (uint64_t)(lhs.access_record_) < (uint64_t)(rhs.access_record_);
+    }
+
+    static bool GAddrCompFunction(Access lhs, Access rhs) {
+        return lhs.access_addr_ < rhs.access_addr_;
+    }
+
+   public:
+    size_t access_count_;
+
+   private:
+    Access accesses_[N];
 };
 
-template<int N>
-class AccessPtrList{
-public:
-  AccessPtrList() : access_count_(0) {}
+template <int N>
+class AccessPtrList {
+   public:
+    AccessPtrList() : access_count_(0) {}
 
-  void Add(Access *access) {
-    assert(access_count_ < N);
-    accesses_[access_count_] = access;
-    ++access_count_;
-  }
+    void Add(Access *access) {
+        assert(access_count_ < N);
+        accesses_[access_count_] = access;
+        ++access_count_;
+    }
 
-  Access *GetAccess(const size_t &index){
-    return accesses_[index];
-  }
+    Access *GetAccess(const size_t &index) { return accesses_[index]; }
 
-  void Clear() {
-    access_count_ = 0;
-  }
+    void Clear() { access_count_ = 0; }
 
-  void Sort(){
-    std::sort(accesses_, accesses_ + access_count_, GAddrCompFunction);
-  }
+    void Sort() {
+        std::sort(accesses_, accesses_ + access_count_, GAddrCompFunction);
+    }
 
-private:
-  static bool CompFunction(Access *lhs, Access *rhs){
-    return (uint64_t)(lhs->access_record_) < (uint64_t)(rhs->access_record_);
-  }
+   private:
+    static bool CompFunction(Access *lhs, Access *rhs) {
+        return (uint64_t)(lhs->access_record_) <
+               (uint64_t)(rhs->access_record_);
+    }
 
-  static bool GAddrCompFunction(Access *lhs, Access *rhs){
-    return lhs->access_addr_ < rhs->access_addr_;
-  }
+    static bool GAddrCompFunction(Access *lhs, Access *rhs) {
+        return lhs->access_addr_ < rhs->access_addr_;
+    }
 
-public:
-  size_t access_count_;
-private:
-  Access *accesses_[N];
+   public:
+    size_t access_count_;
+
+   private:
+    Access *accesses_[N];
 };
-}
+}  // namespace Database
 
 #endif

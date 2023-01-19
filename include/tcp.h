@@ -1,7 +1,7 @@
-// Copyright (c) 2018 The GAM Authors 
+// Copyright (c) 2018 The GAM Authors
 
-#ifndef CALLBACK_H_ 
-#define CALLBACK_H_ 
+#ifndef CALLBACK_H_
+#define CALLBACK_H_
 
 #include "ae.h"
 #include "rdma.h"
@@ -13,7 +13,7 @@
  * to exchange rdma parameters, and will be immediately closed after
  * the exchangement.
  *
- * For Unix Socket case, the incoming client is local, and the established 
+ * For Unix Socket case, the incoming client is local, and the established
  * socket will be used for messaging with this client. The first 4 bytes of
  * each message is same as the immediate data associated with
  * RDMA_WRITE_WITH_IMM verbs.
@@ -23,4 +23,3 @@ aeFileProc AcceptTcpClientHandle;
 aeFileProc ProcessRdmaRequestHandle;
 
 #endif
-

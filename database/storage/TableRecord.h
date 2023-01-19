@@ -32,24 +32,24 @@
 #include "../content/LockRtmContent.h"
 #endif
 
-namespace Database{
+namespace Database {
 #ifdef __linux__
-    class __attribute__((aligned(64))) TableRecord : public GAMObject {
+class __attribute__((aligned(64))) TableRecord : public GAMObject {
 #else
-    class TableRecord : public GAMObject {
+class TableRecord : public GAMObject {
 #endif
-public:
+   public:
     // Write the content to the global memory addr
-    void Serialize(const GAddr& addr, GAlloc *gallocator) {
+    void Serialize(const GAddr& addr, GAlloc* gallocator) {
         // serialize record first
         record_->Serialize(addr, gallocator);
         // serialize content
-        size_t off  = record_->GetSerializeSize();
+        size_t off = record_->GetSerializeSize();
         const GAddr& content_addr = GADD(addr, off);
         content_.Serialize(content_addr, gallocator);
     }
     // Read the content from the global memory addr
-    void Deserialize(const GAddr& addr, GAlloc *gallocator) {
+    void Deserialize(const GAddr& addr, GAlloc* gallocator) {
         record_->Deserialize(addr, gallocator);
         size_t off = record_->GetSerializeSize();
         const GAddr& content_addr = GADD(addr, off);
@@ -64,50 +64,52 @@ public:
     //     return content_.GetSerializeSize();
     // }
 
-#if defined(MVLOCK_WAIT) || defined(MVLOCK) || defined(MVOCC) || defined(MVTO) || defined(SILOCK) || defined(SIOCC)
-    TableRecord(Record *record) : record_(record), content_(record->data_ptr_) {}
+#if defined(MVLOCK_WAIT) || defined(MVLOCK) || defined(MVOCC) || \
+    defined(MVTO) || defined(SILOCK) || defined(SIOCC)
+    TableRecord(Record* record)
+        : record_(record), content_(record->data_ptr_) {}
 #elif defined(TO)
-    TableRecord(Record *record) : record_(record), content_(record->data_ptr_, record->schema_ptr_->GetSchemaSize()) {}
+    TableRecord(Record* record)
+        : record_(record),
+          content_(record->data_ptr_, record->schema_ptr_->GetSchemaSize()) {}
 #else
-    // TableRecord(RecordSchema *schema_ptr) : record_(new Record(schema_ptr)) {}
-    TableRecord(Record *record) : record_(record) {}
+// TableRecord(RecordSchema *schema_ptr) : record_(new Record(schema_ptr)) {}
+TableRecord(Record* record) : record_(record) {}
 #endif
-    // NOTE(weihaosun): table_record takes ownership of record now, thus is responsible to free record when deconstructing
-    ~TableRecord(){
-        delete record_;
-    }
-    
+    // NOTE(weihaosun): table_record takes ownership of record now, thus is
+    // responsible to free record when deconstructing
+    ~TableRecord() { delete record_; }
+
     Record* record_;
 
 #if defined(LOCK_WAIT)
-        LockWaitContent content_;
+    LockWaitContent content_;
 #elif defined(LOCK) || defined(ST)
-        LockContent content_;
+    LockContent content_;
 #elif defined(OCC) || defined(SILO)
-        LockContentWithTs content_;
+LockContentWithTs content_;
 #elif defined(SILOCK) || defined(SIOCC)
-        SiLockContent content_;
+SiLockContent content_;
 #elif defined(TO)
-        ToContent content_;
+ToContent content_;
 #elif defined(MVTO)
-        MvToContent content_;
+MvToContent content_;
 #elif defined(TVLOCK)
-        TvLockContent content_;
+TvLockContent content_;
 #elif defined(MVLOCK)
-        MvLockContent content_;
+MvLockContent content_;
 #elif defined(MVLOCK_WAIT)
-        MvLockWaitContent content_;
+MvLockWaitContent content_;
 #elif defined(MVOCC)
-        MvOccContent content_;
+MvOccContent content_;
 #elif defined(DBX)
-        DbxContent content_;
+DbxContent content_;
 #elif defined(RTM)
-        RtmContent content_;
+RtmContent content_;
 #elif defined(OCC_RTM) || defined(LOCK_RTM)
-        LockRtmContent content_;
+LockRtmContent content_;
 #endif
-    };
-}
-
+};
+}  // namespace Database
 
 #endif

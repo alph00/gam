@@ -1,8 +1,8 @@
 #ifndef __DATABASE_META_H__
 #define __DATABASE_META_H__
 
-#include <cstring>
 #include <cstdint>
+#include <cstring>
 
 #include "gallocator.h"
 
@@ -10,21 +10,13 @@ namespace Database {
 typedef uint32_t HashcodeType;
 typedef uint64_t IndexKey;
 
-enum LockType
-  : size_t {NO_LOCK,
-  READ_LOCK,
-  WRITE_LOCK,
+enum LockType : size_t {
+    NO_LOCK,
+    READ_LOCK,
+    WRITE_LOCK,
 };
-enum AccessType
-  : size_t {READ_ONLY,
-  READ_WRITE,
-  INSERT_ONLY,
-  DELETE_ONLY
-};
-enum SourceType
-  : size_t {RANDOM_SOURCE,
-  PARTITION_SOURCE
-};
+enum AccessType : size_t { READ_ONLY, READ_WRITE, INSERT_ONLY, DELETE_ONLY };
+enum SourceType : size_t { RANDOM_SOURCE, PARTITION_SOURCE };
 
 // storage
 const size_t kMaxTableNum = 16;
@@ -46,6 +38,6 @@ extern size_t gThreadCount;
 // source
 extern size_t gParamBatchSize;
 
-}
+}  // namespace Database
 
 #endif

@@ -2,8 +2,8 @@
 #ifndef __CAVALIA_DATABASE_CC_MEM_ALLOC_PROFILER_H__
 #define __CAVALIA_DATABASE_CC_MEM_ALLOC_PROFILER_H__
 
-#include <unordered_map>
 #include <cstdio>
+#include <unordered_map>
 #if defined(PRECISE_TIMER)
 #include <PreciseTimeMeasurer.h>
 #else
@@ -12,37 +12,39 @@
 
 #if !defined(MUTE) && defined(PROFILE_CC_MEM_ALLOC)
 #if defined(PRECISE_TIMER)
-#define INIT_CC_MEM_ALLOC_TIME_PROFILER \
-	cc_mem_alloc_time_stat_ = new long long[gThreadCount]; \
-	memset(cc_mem_alloc_time_stat_, 0, sizeof(long long)*gThreadCount); \
-	cc_mem_alloc_timer_ = new PreciseTimeMeasurer[gThreadCount];
+#define INIT_CC_MEM_ALLOC_TIME_PROFILER                                   \
+    cc_mem_alloc_time_stat_ = new long long[gThreadCount];                \
+    memset(cc_mem_alloc_time_stat_, 0, sizeof(long long) * gThreadCount); \
+    cc_mem_alloc_timer_ = new PreciseTimeMeasurer[gThreadCount];
 
 #else
-#define INIT_CC_MEM_ALLOC_TIME_PROFILER \
-	cc_mem_alloc_time_stat_ = new long long[gThreadCount]; \
-	memset(cc_mem_alloc_time_stat_, 0, sizeof(long long)*gThreadCount); \
-	cc_mem_alloc_timer_ = new TimeMeasurer[gThreadCount];
+#define INIT_CC_MEM_ALLOC_TIME_PROFILER                                   \
+    cc_mem_alloc_time_stat_ = new long long[gThreadCount];                \
+    memset(cc_mem_alloc_time_stat_, 0, sizeof(long long) * gThreadCount); \
+    cc_mem_alloc_timer_ = new TimeMeasurer[gThreadCount];
 #endif
 
 #define BEGIN_CC_MEM_ALLOC_TIME_MEASURE(thread_id) \
-	cc_mem_alloc_timer_[thread_id].StartTimer();
+    cc_mem_alloc_timer_[thread_id].StartTimer();
 
 #define END_CC_MEM_ALLOC_TIME_MEASURE(thread_id) \
-	cc_mem_alloc_timer_[thread_id].EndTimer(); \
-	cc_mem_alloc_time_stat_[thread_id] += cc_mem_alloc_timer_[thread_id].GetElapsedNanoSeconds();
+    cc_mem_alloc_timer_[thread_id].EndTimer();   \
+    cc_mem_alloc_time_stat_[thread_id] +=        \
+        cc_mem_alloc_timer_[thread_id].GetElapsedNanoSeconds();
 
-#define REPORT_CC_MEM_ALLOC_TIME_PROFILER \
-	printf("**********BEGIN CC MEM ALLOC TIME PROFILING REPORT**********\n"); \
-for (int i = 0; i < gThreadCount; ++i){ \
-if (cc_mem_alloc_time_stat_[i] != 0){ \
-	printf("thread_id = %d, elapsed_time = %lld ms\n", i, cc_mem_alloc_time_stat_[i] / 1000 / 1000); \
-} \
-} \
-	printf("**********END CC MEM ALLOC TIME PROFILING REPORT**********\n\n"); \
-	delete[] cc_mem_alloc_time_stat_; \
-	cc_mem_alloc_time_stat_ = NULL; \
-	delete[] cc_mem_alloc_timer_; \
-	cc_mem_alloc_timer_ = NULL;
+#define REPORT_CC_MEM_ALLOC_TIME_PROFILER                                     \
+    printf("**********BEGIN CC MEM ALLOC TIME PROFILING REPORT**********\n"); \
+    for (int i = 0; i < gThreadCount; ++i) {                                  \
+        if (cc_mem_alloc_time_stat_[i] != 0) {                                \
+            printf("thread_id = %d, elapsed_time = %lld ms\n", i,             \
+                   cc_mem_alloc_time_stat_[i] / 1000 / 1000);                 \
+        }                                                                     \
+    }                                                                         \
+    printf("**********END CC MEM ALLOC TIME PROFILING REPORT**********\n\n"); \
+    delete[] cc_mem_alloc_time_stat_;                                         \
+    cc_mem_alloc_time_stat_ = NULL;                                           \
+    delete[] cc_mem_alloc_timer_;                                             \
+    cc_mem_alloc_timer_ = NULL;
 
 #else
 #define INIT_CC_MEM_ALLOC_TIME_PROFILER ;
@@ -52,14 +54,14 @@ if (cc_mem_alloc_time_stat_[i] != 0){ \
 #endif
 
 // namespace Cavalia{
-	namespace Database{
-		extern long long *cc_mem_alloc_time_stat_;
+namespace Database {
+extern long long *cc_mem_alloc_time_stat_;
 #if defined(PRECISE_TIMER)
-		extern PreciseTimeMeasurer *cc_mem_alloc_timer_;
+extern PreciseTimeMeasurer *cc_mem_alloc_timer_;
 #else
-		extern TimeMeasurer *cc_mem_alloc_timer_;
+extern TimeMeasurer *cc_mem_alloc_timer_;
 #endif
-	}
+}  // namespace Database
 // }
 
 #endif

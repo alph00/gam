@@ -1,9 +1,8 @@
 #include "GlobalTimestamp.h"
 
-namespace Database{
-	std::atomic<uint64_t> GlobalTimestamp::monotone_timestamp_(1);
+namespace Database {
+std::atomic<uint64_t> GlobalTimestamp::monotone_timestamp_(1);
 
-	std::atomic<uint64_t> *GlobalTimestamp::thread_timestamp_[kMaxThreadNum];
-	size_t GlobalTimestamp::thread_count_ = 0;
-}
-
+std::atomic<uint64_t> *GlobalTimestamp::thread_timestamp_[kMaxThreadNum];
+size_t GlobalTimestamp::thread_count_ = 0;
+}  // namespace Database

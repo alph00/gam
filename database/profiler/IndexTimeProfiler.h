@@ -10,34 +10,38 @@
 #endif
 
 #if !defined(MUTE) && defined(PROFILE_ACCESS_INDEX)
-#if defined(PRECISE_TIMER) 
-#define INIT_INDEX_TIME_PROFILER \
-	access_index_stat_ = new long long[gThreadCount]; \
-	for(size_t i = 0; i < gThreadCount; ++i) access_index_stat_[i] = 0; \
-	access_index_timer_ = new PreciseTimeMeasurer[gThreadCount];
+#if defined(PRECISE_TIMER)
+#define INIT_INDEX_TIME_PROFILER                                         \
+    access_index_stat_ = new long long[gThreadCount];                    \
+    for (size_t i = 0; i < gThreadCount; ++i) access_index_stat_[i] = 0; \
+    access_index_timer_ = new PreciseTimeMeasurer[gThreadCount];
 #else
-#define INIT_INDEX_TIME_PROFILER \
-	access_index_stat_ = new long long[gThreadCount]; \
-	memset(access_index_stat_, 0, sizeof(access_index_stat_)*gThreadCount); \
-	access_index_timer_ = new TimeMeasurer[gThreadCount];
+#define INIT_INDEX_TIME_PROFILER                                              \
+    access_index_stat_ = new long long[gThreadCount];                         \
+    memset(access_index_stat_, 0, sizeof(access_index_stat_) * gThreadCount); \
+    access_index_timer_ = new TimeMeasurer[gThreadCount];
 #endif
 #define BEGIN_INDEX_TIME_MEASURE(thread_id) \
-	assert(thread_id==0);\
-	access_index_timer_[thread_id].StartTimer();
+    assert(thread_id == 0);                 \
+    access_index_timer_[thread_id].StartTimer();
 
-#define END_INDEX_TIME_MEASURE(thread_id) \
-	assert(thread_id==0);\
-	access_index_timer_[thread_id].EndTimer(); \
-	access_index_stat_[thread_id] += access_index_timer_[thread_id].GetElapsedNanoSeconds();
+#define END_INDEX_TIME_MEASURE(thread_id)      \
+    assert(thread_id == 0);                    \
+    access_index_timer_[thread_id].EndTimer(); \
+    access_index_stat_[thread_id] +=           \
+        access_index_timer_[thread_id].GetElapsedNanoSeconds();
 
-#define REPORT_INDEX_TIME_PROFILER \
-	long long res = 0; \
-	for (size_t i = 0; i < gThreadCount; ++i) res += access_index_stat_[i]; \
-	printf("********************** ACCESS INDEX TIME REPORT ************\n in total, access index time=%lld ms\n", res / 1000 / 1000); \
-	delete[] access_index_timer_; \
-	access_index_timer_ = NULL; \
-	delete[] access_index_stat_; \
-	access_index_stat_ = NULL;
+#define REPORT_INDEX_TIME_PROFILER                                           \
+    long long res = 0;                                                       \
+    for (size_t i = 0; i < gThreadCount; ++i) res += access_index_stat_[i];  \
+    printf(                                                                  \
+        "********************** ACCESS INDEX TIME REPORT ************\n in " \
+        "total, access index time=%lld ms\n",                                \
+        res / 1000 / 1000);                                                  \
+    delete[] access_index_timer_;                                            \
+    access_index_timer_ = NULL;                                              \
+    delete[] access_index_stat_;                                             \
+    access_index_stat_ = NULL;
 
 #else
 #define INIT_INDEX_TIME_PROFILER ;
@@ -47,14 +51,14 @@
 #endif
 
 // namespace Cavalia{
-	namespace Database{
-		extern long long* access_index_stat_;
+namespace Database {
+extern long long* access_index_stat_;
 #if defined(PRECISE_TIMER)
-		extern PreciseTimeMeasurer *access_index_timer_;
+extern PreciseTimeMeasurer* access_index_timer_;
 #else
-		extern TimeMeasurer *access_index_timer_;
+extern TimeMeasurer* access_index_timer_;
 #endif
-	}
+}  // namespace Database
 // }
 
 #endif

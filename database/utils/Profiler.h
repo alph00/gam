@@ -30,9 +30,9 @@
 
 // const static std::string phase_type_string[kPhaseCount] = { "INDEX_READ",
 //     "INDEX_INSERT", "INDEX_INSERT_LOCK", "INDEX_INSERT_MUTATE",
-//     "INDEX_INSERT_GALLOCATE", "CC_SELECT", "CC_INSERT", "CC_COMMIT", "CC_ABORT",
-//     "TXN_ABORT", "TXN_EXECUTE", "LOCK_READ", "LOCK_WRITE", "POPULATE_DISK",
-//     "POPULATE_GALLOCATE", "POPULATE_INSERT" };
+//     "INDEX_INSERT_GALLOCATE", "CC_SELECT", "CC_INSERT", "CC_COMMIT",
+//     "CC_ABORT", "TXN_ABORT", "TXN_EXECUTE", "LOCK_READ", "LOCK_WRITE",
+//     "POPULATE_DISK", "POPULATE_GALLOCATE", "POPULATE_INSERT" };
 
 // extern TimeMeasurer** profiler_timers;
 // extern long long** profile_elapsed_time;
@@ -45,7 +45,8 @@
 // 	for (int i = 0; i < thread_count; ++i){ \
 // 		profiler_timers[i] = new TimeMeasurer[kPhaseCount]; \
 // 		profile_elapsed_time[i] = new long long[kPhaseCount]; \
-// 		memset(profile_elapsed_time[i], 0, sizeof(long long) * kPhaseCount); \
+// 		memset(profile_elapsed_time[i], 0, sizeof(long long) *
+// kPhaseCount); \
 // 	}
 
 // #define PROFILE_TIME_START(thread_id, phase_id) \

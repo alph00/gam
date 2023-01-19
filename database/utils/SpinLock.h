@@ -12,70 +12,54 @@
 
 #if defined(PTHREAD_LOCK)
 struct SpinLock {
-  SpinLock() {}
+    SpinLock() {}
 
-  void Init() {
-    pthread_spin_init(&spinlock_, PTHREAD_PROCESS_PRIVATE);
-  }
+    void Init() { pthread_spin_init(&spinlock_, PTHREAD_PROCESS_PRIVATE); }
 
-  inline void Lock() {
-    pthread_spin_lock(&spinlock_);
-  }
+    inline void Lock() { pthread_spin_lock(&spinlock_); }
 
-  inline void Unlock() {
-    pthread_spin_unlock(&spinlock_);
-  }
+    inline void Unlock() { pthread_spin_unlock(&spinlock_); }
 
-private:
-  pthread_spinlock_t spinlock_;
+   private:
+    pthread_spinlock_t spinlock_;
 };
 
 #elif defined(BUILTIN_LOCK)
 struct SpinLock {
-  SpinLock() {}
+    SpinLock() {}
 
-  void Init() {
-    spinlock_ = 0;
-  }
+    void Init() { spinlock_ = 0; }
 
-  inline void Lock() {
-    while(__sync_lock_test_and_set(&spinlock_, 1)) {
-      while(spinlock_);
+    inline void Lock() {
+        while (__sync_lock_test_and_set(&spinlock_, 1)) {
+            while (spinlock_)
+                ;
+        }
     }
-  }
 
-  inline void Unlock() {
-    __asm__ __volatile__("" ::: "memory");
-    spinlock_ = 0;
-  }
+    inline void Unlock() {
+        __asm__ __volatile__("" ::: "memory");
+        spinlock_ = 0;
+    }
 
-private:
-  volatile bool spinlock_;
+   private:
+    volatile bool spinlock_;
 };
 
 #else
 struct SpinLock {
-  SpinLock() {
-  }
+    SpinLock() {}
 
-  void Init() {
-    memset(&spinlock_, 0, sizeof(spinlock_));
-  }
+    void Init() { memset(&spinlock_, 0, sizeof(spinlock_)); }
 
-  inline void Lock() {
-    spinlock_.lock();
-  }
+    inline void Lock() { spinlock_.lock(); }
 
-  inline void Unlock() {
-    spinlock_.unlock();
-  }
+    inline void Unlock() { spinlock_.unlock(); }
 
-  inline bool IsLocked() const {
-    return spinlock_.v_ == 1;
-  }
+    inline bool IsLocked() const { return spinlock_.v_ == 1; }
 
- private:
-  boost::detail::spinlock spinlock_;
+   private:
+    boost::detail::spinlock spinlock_;
 };
 
 #endif

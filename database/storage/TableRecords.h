@@ -4,31 +4,29 @@
 
 #include "TableRecord.h"
 
-namespace Database{
-    class TableRecords{
-        TableRecords(const size_t &max_size) : max_size_(max_size){
-            curr_size_ = 0;
-            records_ = new TableRecord*[max_size];
-        }
-        ~TableRecords(){
-            delete[] records_;
-            records_ = NULL;
-        }
+namespace Database {
+class TableRecords {
+    TableRecords(const size_t &max_size) : max_size_(max_size) {
+        curr_size_ = 0;
+        records_ = new TableRecord *[max_size];
+    }
+    ~TableRecords() {
+        delete[] records_;
+        records_ = NULL;
+    }
 
-        void InsertRecord(TableRecord *record) {
-            assert(curr_size_ < max_size_);
-            records_[curr_size_] = record;
-            ++curr_size_;
-        }
+    void InsertRecord(TableRecord *record) {
+        assert(curr_size_ < max_size_);
+        records_[curr_size_] = record;
+        ++curr_size_;
+    }
 
-        void Clear() {
-            curr_size_ = 0;
-        }
+    void Clear() { curr_size_ = 0; }
 
-        const size_t max_size_;
-        size_t curr_size_;
-        TableRecord **records_;
-    };  // class TableRecords
+    const size_t max_size_;
+    size_t curr_size_;
+    TableRecord **records_;
+};  // class TableRecords
 };  // namespace Database
 
 #endif

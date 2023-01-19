@@ -1,26 +1,26 @@
-// Copyright (c) 2018 The GAM Authors 
+// Copyright (c) 2018 The GAM Authors
 
 #ifndef LOGGING_H
-#define LOGGING_H 
+#define LOGGING_H
 
-#include <fstream>
-#include <string>
 #include <atomic>
+#include <fstream>
 #include <future>
+#include <string>
 #include <thread>
 
 #include "structure.h"
-//#include "gallocator.h"
+// #include "gallocator.h"
 
 class Log {
-  public:
+   public:
     friend class Worker;
     Log(const Log&) = delete;
     Log& operator=(const Log&) = delete;
     void logWrite(GAddr, Size, const void*);
-    void logOwner(int,  GAddr);
+    void logOwner(int, GAddr);
 
-  private:
+   private:
     void* base_;
     std::atomic_uint_fast32_t spos_, epos_;
     std::atomic_bool running_;
@@ -29,9 +29,7 @@ class Log {
     std::future<void> async_;
     std::thread::id thread_;
 
-    void* toLocal(GAddr addr) {
-      return TO_LOCAL(addr, base_);
-    }
+    void* toLocal(GAddr addr) { return TO_LOCAL(addr, base_); }
 
     void write();
     int writeToBuf(void*, Size, int);

@@ -3,14 +3,14 @@
 
 #include "gallocator.h"
 
-namespace Database{
+namespace Database {
 class GAMObject {
-public:
+   public:
     // Write the content to the global memory addr
-    virtual void Serialize(const GAddr& addr, GAlloc *gallocator) = 0;
+    virtual void Serialize(const GAddr& addr, GAlloc* gallocator) = 0;
     // Read the content from the global memory addr
-    virtual void Deserialize(const GAddr& addr, GAlloc *gallocator) = 0;
+    virtual void Deserialize(const GAddr& addr, GAlloc* gallocator) = 0;
 };
-}
+}  // namespace Database
 
 #endif
