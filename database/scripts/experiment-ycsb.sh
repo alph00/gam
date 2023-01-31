@@ -1,13 +1,6 @@
 #!/bin/bash
 set -o nounset
 
-#
-pass_file="/home/qfs/pass.txt"
-while read line
-do
-passcode=$line
-done < ${pass_file}
-passshell="sshpass -p ${passcode}"
 
 
 # With the specified arguments for benchmark setting, 
@@ -42,32 +35,17 @@ launch () {
   script="cd ${bin_dir} && ./ycsb ${USER_ARGS} -yth${theta_ratio} > ${output_file} 2>&1"
   
   echo "start master: ssh ${ssh_opts} ${master_host} "$script" &"
-  ${passshell} ssh ${ssh_opts} ${master_host} "$script" &
+  ssh ${ssh_opts} ${master_host} "$script" &
   sleep 3
   for ((i=1;i<${#hosts[@]};i++)); do
     host=${hosts[$i]}
     echo "start worker: ssh ${ssh_opts} ${host} "$script" &"
-    ${passshell} ssh ${ssh_opts} ${host} "$script" &
+    ssh ${ssh_opts} ${host} "$script" &
     sleep 1
   done
   wait
   echo "done for ${theta_ratio}" 
 }
-# launchNoTheta () {
-#   output_file="${output_dir}/notheta_ycsb.log"
-#   script="cd ${bin_dir} && ./ycsb ${USER_ARGS}  > ${output_file} 2>&1"
-  
-#   echo "start master: ssh ${ssh_opts} ${master_host} "$script" &"
-#   ${passshell} ssh ${ssh_opts} ${master_host} "$script" &
-#   sleep 3
-#   for ((i=1;i<${#hosts[@]};i++)); do
-#     host=${hosts[$i]}
-#     echo "start worker: ssh ${ssh_opts} ${host} "$script" &"
-#     ${passshell} ssh ${ssh_opts} ${host} "$script" &
-#     sleep 1
-#   done
-#   wait
-# }
 
 run_ycsb () {
   theta_ratios=(0.5 0.7 0.9 0.99)
@@ -104,9 +82,4 @@ auto_fill_params () {
 }
 
 auto_fill_params
-# run standard ycsb
 run_ycsb
-# launch 0
-
-# vary_read_ratios
-#vary_temp_locality

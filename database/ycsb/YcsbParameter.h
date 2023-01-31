@@ -8,10 +8,12 @@
 
 //  data parameter
 #define YCSB_TABLE_LENTH 39999 // 表的大小 // 若三个节点，此处应设置为3的倍数
-#define YCSB_TABLE_F_INT_SIZE 32
-#define YCSB_TABLE_F_STRING_SIZE 32
-#define YCSB_TABLE_F_INT_MIN 1
-#define YCSB_TABLE_F_INT_MAX 40000
+#define YCSB_TABLE_F_INT_SIZE 4
+#define YCSB_TABLE_F_STRING_SIZE 32 // string size为55是record<512条件下的最大值
+// record size=4+9*string size+1+8
+
+// #define YCSB_TABLE_F_INT_MIN 1
+// #define YCSB_TABLE_F_INT_MAX (YCSB_TABLE_LENTH - 1)
 
 // txn parameter
 #define YCSB_TXN_LEHTH 16 // 一个事务有16个读/写
@@ -23,6 +25,6 @@
 
 #define UNIFORM
 #define ZIPFIAN true
-#define THETA 0.9 // 这里是默认值，其值在experiment-ycsb.sh中最终确定
+#define THETA 0.9 // 这里是默认值，其值由experiment-ycsb.sh中决定
 
 #endif

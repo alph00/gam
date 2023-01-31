@@ -66,7 +66,7 @@ private:
     GAlloc *gallocator = gallocators[thread_id];
     Record *record_buf = MainTable_record_buf->record_;
     GAddr data_addr =
-        gallocator->Malloc(MainTable_record_buf->GetSerializeSize());
+        gallocator->AlignedMalloc(MainTable_record_buf->GetSerializeSize());
     {
       int *data_i = (int *)malloc(record_buf->GetSchema()->GetColumnSize(0));
       int t = id;

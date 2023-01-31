@@ -37,3 +37,6 @@ compile_commands.json
 
 # ycsbdata
 *prefill.dat
+
+# ycsbsh
+experiment-ycsb-qfs.sh

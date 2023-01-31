@@ -30,7 +30,6 @@ public:
   virtual bool Execute(TxnParam *param, CharArray &ret) {
     epicLog(LOG_DEBUG, "thread_id=%u,start ycsb", thread_id_);
     YcsbParam *ycsb_param = static_cast<YcsbParam *>(param);
-    GAddr kw[ycsb_param->Txnlength + 10];
     int kwcnt = 0;
 
     // gen key
@@ -45,34 +44,21 @@ public:
       key = YcsbRandomGenerator::GenerateInteger(0, YCSB_TABLE_LENGTH - 1);
 #endif
       { // 避免两次访问同一个key
-        // BEGIN_PHASE_MEASURE(thread_id_, INDEX_READ);
-        // GAddr data_addr =
-        //     transaction_manager_->storage_manager_->tables_[MAIN_TABLE_ID]
-        //         ->SearchRecord(key, gallocators[thread_id_], thread_id_);
-        // END_PHASE_MEASURE(thread_id_, INDEX_READ);
-        // if (data_addr == Gnullptr) {
-        //   assert(0);
-        // }
         bool flag = false;
-        // for (auto i = 0; i < kwcnt; ++i) {
-        //   if (kw[i] <= 512 * 3) {
-        //     assert(0);
-        //   }
-        //   if (data_addr <= kw[i] + 512 * 3 && data_addr >= kw[i] - 512 * 3) {
-        //     flag = true;
-        //     break;
-        //   }
-        // }
-        if (flag) {
-        } else {
-          // kw[kwcnt] = data_addr;
+        for (auto i = 0; i < kwcnt; ++i) {
+          if (key == keys[i]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) {
           keys[kwcnt] = key;
           kwcnt++;
         }
       }
     }
     // sort
-    // sort(keys, keys + ycsb_param->Txnlength);
+    sort(keys, keys + ycsb_param->Txnlength);
     // execute
     for (auto j = 0; j < ycsb_param->Txnlength; ++j) {
       double x = YcsbRandomGenerator::GenerateInteger(1, 100) * 1.0 / 100;
@@ -103,18 +89,6 @@ public:
         // to do for insert
       }
     }
-    // for (auto i = 0; i < kwcnt; ++i) {
-    //   for (auto j = i + 1; j < kwcnt; ++j) {
-    //     if (kw[j] > kw[i]) {
-    //       if (kw[i] - kw[j] <= 521)
-    //         printf(" %zu-%lx-%lx \n", thread_id_, kw[i], kw[j]);
-    //     } else {
-    //       if (kw[j] - kw[i] <= 521)
-    //         printf(" %zu-%lx-%lx \n", thread_id_, kw[i], kw[j]);
-    //     }
-    //   }
-    // }
-
     return transaction_manager_->CommitTransaction(&context_, param, ret);
   }
 };
