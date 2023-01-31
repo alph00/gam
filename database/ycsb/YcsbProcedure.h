@@ -4,6 +4,7 @@
 #include "Meta.h"
 #include "Record.h"
 #include "StoredProcedure.h"
+#include "TxnParam.h"
 #include "YcsbRandomGenerator.h"
 #include "YcsbTxnParams.h"
 #include "log.h"
@@ -12,6 +13,7 @@
 #include "ycsb/YcsbParameter.h"
 #include "ycsb/zipf.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
@@ -30,7 +32,10 @@ public:
     YcsbParam *ycsb_param = static_cast<YcsbParam *>(param);
     GAddr kw[ycsb_param->Txnlength + 10];
     int kwcnt = 0;
-    for (auto j = 0; j < ycsb_param->Txnlength; ++j) {
+
+    // gen key
+    Key keys[10 + ycsb_param->Txnlength];
+    while (kwcnt < ycsb_param->Txnlength) {
       Key key;
       // zipfian for key
 #ifdef ZIPFIAN
@@ -39,37 +44,42 @@ public:
 #elif defined UNIFORM
       key = YcsbRandomGenerator::GenerateInteger(0, YCSB_TABLE_LENGTH - 1);
 #endif
-      double x = YcsbRandomGenerator::GenerateInteger(1, 100) * 1.0 / 100;
       { // 避免两次访问同一个key
-        BEGIN_PHASE_MEASURE(thread_id_, INDEX_READ);
-        GAddr data_addr =
-            transaction_manager_->storage_manager_->tables_[MAIN_TABLE_ID]
-                ->SearchRecord(key, gallocators[thread_id_], thread_id_);
-        END_PHASE_MEASURE(thread_id_, INDEX_READ);
-        if (data_addr == Gnullptr) {
-          assert(0);
-        }
+        // BEGIN_PHASE_MEASURE(thread_id_, INDEX_READ);
+        // GAddr data_addr =
+        //     transaction_manager_->storage_manager_->tables_[MAIN_TABLE_ID]
+        //         ->SearchRecord(key, gallocators[thread_id_], thread_id_);
+        // END_PHASE_MEASURE(thread_id_, INDEX_READ);
+        // if (data_addr == Gnullptr) {
+        //   assert(0);
+        // }
         bool flag = false;
-        for (auto i = 0; i < kwcnt; ++i) {
-          if (kw[i] <= 512 * 3) {
-            assert(0);
-          }
-          if (data_addr <= kw[i] + 512 * 3 && data_addr >= kw[i] - 512 * 3) {
-            --j;
-            flag = true;
-            break;
-          }
-        }
+        // for (auto i = 0; i < kwcnt; ++i) {
+        //   if (kw[i] <= 512 * 3) {
+        //     assert(0);
+        //   }
+        //   if (data_addr <= kw[i] + 512 * 3 && data_addr >= kw[i] - 512 * 3) {
+        //     flag = true;
+        //     break;
+        //   }
+        // }
         if (flag) {
-          continue;
         } else {
-          kw[kwcnt++] = data_addr;
+          // kw[kwcnt] = data_addr;
+          keys[kwcnt] = key;
+          kwcnt++;
         }
       }
+    }
+    // sort
+    // sort(keys, keys + ycsb_param->Txnlength);
+    // execute
+    for (auto j = 0; j < ycsb_param->Txnlength; ++j) {
+      double x = YcsbRandomGenerator::GenerateInteger(1, 100) * 1.0 / 100;
       if (x < ycsb_param->getratio) { // get
         Record *record = nullptr;
         DB_QUERY(
-            SearchRecord(&context_, MAIN_TABLE_ID, key, record, READ_ONLY));
+            SearchRecord(&context_, MAIN_TABLE_ID, keys[j], record, READ_ONLY));
         for (auto i = 1; i < record->GetSchema()->GetColumnCount() - 1; ++i) {
           char field[record->GetSchema()->GetColumnSize(i)];
           record->GetColumn(i, field);
@@ -77,8 +87,8 @@ public:
       } else if (x >= ycsb_param->getratio &&
                  x < ycsb_param->getratio + ycsb_param->updateratio) { // update
         Record *record = nullptr;
-        DB_QUERY(
-            SearchRecord(&context_, MAIN_TABLE_ID, key, record, READ_WRITE));
+        DB_QUERY(SearchRecord(&context_, MAIN_TABLE_ID, keys[j], record,
+                              READ_WRITE));
         for (auto i = 1; i < record->GetSchema()->GetColumnCount() - 1; ++i) {
           char field[record->GetSchema()->GetColumnSize(i)];
           record->GetColumn(i, field);
