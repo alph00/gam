@@ -131,6 +131,19 @@ int Worker::ProcessLocalMalloc(WorkRequest* wr) {
         ghost_size += wr->size;
         // if (abs(ghost_size.load()) > conf->ghost_th)
         if (ghost_size.load() > conf->ghost_th) SyncMaster();
+
+        // init entry when doing malloc
+        GAddr start = wr->addr;
+        GAddr start_blk = TOBLOCK(start);
+        GAddr end = GADD(start, wr->size);
+        for (GAddr i = start_blk; i < end;) {
+            GAddr nextb = BADD(i, 1);
+            void* laddr = ToLocal(i);
+            if (directory.GetEntry(laddr) == nullptr) {
+                directory.InitEntry(ptr_t(laddr), i);
+            }
+            i = nextb;
+        }
     } else {
         wr->status = ALLOC_ERROR;
     }

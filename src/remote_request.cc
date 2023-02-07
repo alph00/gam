@@ -126,6 +126,19 @@ void Worker::ProcessRemoteMalloc(Client* client, WorkRequest* wr) {
             LOG_DEBUG,
             "allocated %d at address %lx, base = %lx, wid = %d, gaddr = %lx",
             wr->size, addr, base, GetWorkerId(), wr->addr);
+
+        // init entry when doing malloc
+        GAddr start = wr->addr;
+        GAddr start_blk = TOBLOCK(start);
+        GAddr end = GADD(start, wr->size);
+        for (GAddr i = start_blk; i < end;) {
+            GAddr nextb = BADD(i, 1);
+            void* laddr = ToLocal(i);
+            if (directory.GetEntry(laddr) == nullptr) {
+                directory.InitEntry(ptr_t(laddr), i);
+            }
+            i = nextb;
+        }
     } else {
         wr->status = ALLOC_ERROR;
     }

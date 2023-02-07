@@ -72,4 +72,18 @@ typedef int PostProcessFunc(int, void*);
     } while (0)
 #define UNLOCK_MICRO(table, key) ((table).unlock(key))
 
+
+enum CacheState {
+    CACHE_NOT_EXIST = -1,
+    CACHE_INVALID = 0,
+    CACHE_SHARED,
+    CACHE_DIRTY,
+    CACHE_TO_INVALID,
+    CACHE_TO_SHARED,
+    CACHE_TO_DIRTY,
+#ifdef SELECTIVE_CACHING
+    CACHE_NOT_CACHE
+#endif
+};
+
 #endif /* INCLUDE_STRUCTURE_H_ */

@@ -23,18 +23,18 @@ class Worker;
 #define CACHE_LINE_PREFIX 0  // dirty/invalid
 typedef void* caddr;
 
-enum CacheState {
-    CACHE_NOT_EXIST = -1,
-    CACHE_INVALID = 0,
-    CACHE_SHARED,
-    CACHE_DIRTY,
-    CACHE_TO_INVALID,
-    CACHE_TO_SHARED,
-    CACHE_TO_DIRTY,
-#ifdef SELECTIVE_CACHING
-    CACHE_NOT_CACHE
-#endif
-};
+// enum CacheState {
+//     CACHE_NOT_EXIST = -1,
+//     CACHE_INVALID = 0,
+//     CACHE_SHARED,
+//     CACHE_DIRTY,
+//     CACHE_TO_INVALID,
+//     CACHE_TO_SHARED,
+//     CACHE_TO_DIRTY,
+// #ifdef SELECTIVE_CACHING
+//     CACHE_NOT_CACHE
+// #endif
+// };
 
 struct CacheLine {
     void* line = nullptr;

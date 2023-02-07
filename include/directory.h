@@ -21,6 +21,7 @@ enum DirState {
 };
 
 struct DirEntry {
+    CacheState cache_state = CACHE_DIRTY;
     DirState state = DIR_UNSHARED;
     list<GAddr> shared;
     ptr_t addr;
@@ -105,6 +106,34 @@ class Directory {
         }
     }
     DirEntry* GetEntry(void* ptr) { return GetEntry((ptr_t)ptr); }
+
+    DirEntry* GetEntry(ptr_t ptr, GAddr addr) {
+        ptr_t block = TOBLOCK(ptr);
+        if (dir.count(block)) {
+            return dir.at(block);
+        } else {
+            DirEntry* entry = new DirEntry();
+            entry->state = DIR_UNSHARED;
+            // entry->shared.push_back(addr);
+            entry->addr = block;
+            dir[block] = entry;
+            return entry;
+        }
+    }
+
+    DirEntry* InitEntry(ptr_t ptr, GAddr addr) {
+        ptr_t block = TOBLOCK(ptr);
+        if (dir.count(block)) {
+            return dir.at(block);
+        } else {
+            DirEntry* entry = new DirEntry();
+            entry->state = DIR_UNSHARED;
+            // entry->shared.push_back(addr);
+            entry->addr = block;
+            dir[block] = entry;
+            return entry;
+        }
+    }
 
     DirEntry* ToShared(void* ptr, GAddr addr);
     void ToShared(DirEntry* entry, GAddr addr);
