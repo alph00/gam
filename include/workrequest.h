@@ -168,6 +168,9 @@ struct WorkRequest {
     GFunc* gfunc = nullptr;
     uint64_t arg = 0;
 #endif
+
+    uint64_t encoded_share_list;
+
     WorkRequest()
         : fd(),
           id(),
@@ -183,7 +186,8 @@ struct WorkRequest {
           counter(),
           parent(),
           next(),
-          dup() {
+          dup(),
+          encoded_share_list(0) {
 #if !defined(USE_PIPE_W_TO_H) || !defined(USE_PIPE_H_TO_W)
         notify_buf = nullptr;
 #endif
@@ -254,6 +258,8 @@ struct WorkRequest {
 #endif
 
         is_cache_hit_ = true;
+
+        encoded_share_list = 0;
         unlock();
     }
 

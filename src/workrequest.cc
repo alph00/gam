@@ -316,6 +316,7 @@ WorkRequest::WorkRequest(WorkRequest& wr) {
     dup = wr.dup;
 
     is_cache_hit_ = wr.is_cache_hit_;
+    encoded_share_list = wr.encoded_share_list;
     epicAssert(*this == wr);
     /*
      * LOCAL_REQUEST flag is the only thing that is not copied!
@@ -339,7 +340,7 @@ bool WorkRequest::operator==(const WorkRequest& wr) {
            wr.parent == this->parent && wr.pid == this->pid &&
            wr.ptr == this->ptr && wr.pwid == this->pwid &&
            wr.size == this->size && wr.status == this->status &&
-           wr.wid == this->wid;
+           wr.wid == this->wid && wr.encoded_share_list == this->encoded_share_list;
 }
 
 WorkRequest::~WorkRequest() {}
