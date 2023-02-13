@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "BenchmarkArguments.h"
 #include "CharArray.h"
 #include "TxnParam.h"
 #include "YcsbConstants.h"
@@ -16,9 +17,9 @@ class YcsbParam : public TxnParam {
     YcsbParam() { type_ = YCSB; }
     virtual ~YcsbParam() {}
     int Txnlength = YCSB_TXN_LEHTH;
-    double getratio = YCSB_GET_RATIO;
-    double putratio = YCSB_PUT_RATIO;
-    double updateratio = YCSB_UPDATE_RATIO;
+    double getratio = ycsb_get_ratio;
+    double putratio = ycsb_put_ratio;
+    double updateratio = ycsb_update_ratio;
 };
 
 }  // namespace YcsbBenchmark

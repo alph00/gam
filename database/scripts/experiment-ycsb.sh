@@ -54,27 +54,20 @@ run_ycsb () {
   done
 }
 
-vary_read_ratios () {
-  #read_ratios=(0 30 50 70 90 100)
-  read_ratios=(0) 
-  for read_ratio in ${read_ratios[@]}; do
+vary_get_ratio () {
+  get_ratios=(0.9 0.5) 
+  put_ratios=(0 0)
+  update_ratios=(0.1 0.5)
+  let end=${#get_ratios[*]}-1
+  for c in $(seq 0 ${end})
+  do
     old_user_args=${USER_ARGS}
-    USER_ARGS="${USER_ARGS} -r${read_ratio}"
+    USER_ARGS="${USER_ARGS} -yget${get_ratios[c]} -yput${put_ratios[c]} -yup${update_ratios[c]}"
     run_ycsb
     USER_ARGS=${old_user_args}
   done
 }
 
-vary_temp_locality () {
-  #localities=(0 30 50 70 90 100)
-  localities=(0 50 100)
-  for locality in ${localities[@]}; do
-    old_user_args=${USER_ARGS}
-    USER_ARGS="${USER_ARGS -l${locality}}"
-    run_ycsb
-    USER_ARGS=${old_user_args}
-  done
-}
 
 auto_fill_params () {
   # so that users don't need to specify parameters for themselves
@@ -82,4 +75,5 @@ auto_fill_params () {
 }
 
 auto_fill_params
-run_ycsb
+#run_ycsb
+vary_get_ratio

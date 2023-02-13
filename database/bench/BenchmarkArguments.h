@@ -26,6 +26,9 @@ static bool gStandard = true;  // true if follow standard specification
 
 // To modify ycsb workload
 static double ycsb_theta = THETA;
+static double ycsb_get_ratio = YCSB_GET_RATIO;
+static double ycsb_put_ratio = YCSB_PUT_RATIO;
+static double ycsb_update_ratio = YCSB_UPDATE_RATIO;
 
 static void PrintUsage() {
     std::cout << "==========[USAGE]==========" << std::endl;
@@ -44,7 +47,20 @@ static void PrintUsage() {
     std::cout << "\t-ythDOUBLE: YCSB_THETA(optional, [0,1],default=THETA(in "
                  "YcsbParameter.h) )"
               << std::endl;
-    std::cout << "If ycsb, -sf,-d,-r,-l now don't work and -yth works"
+    std::cout << "\t-ygetDOUBLE: YCSB_GET_RATIO(optional, "
+                 "[0,1],default=YCSB_GET_RATIO(in "
+                 "YcsbParameter.h) )"
+              << std::endl;
+    std::cout << "\t-yputDOUBLE: YCSB_PUT_RATIO(optional, "
+                 "[0,1],default=YCSB_PUT_RATIO(in "
+                 "YcsbParameter.h) )"
+              << std::endl;
+    std::cout << "\t-yupDOUBLE: YCSB_UPDATE_RATIO(optional, "
+                 "[0,1],default=YCSB_UPDATE_RATIO(in "
+                 "YcsbParameter.h) )"
+              << std::endl;
+    std::cout << "If ycsb, -sf,-d,-r,-l now don't work and "
+                 "-yth、-yget、-yput、-yup works"
               << std::endl;
     std::cout << "===========================" << std::endl;
     std::cout << "==========[EXAMPLES]==========" << std::endl;
@@ -79,6 +95,12 @@ static void ArgumentsChecker() {
     }
     if (!(gTimeLocality >= 0 && gTimeLocality <= 100)) {
         std::cout << "TIME_LOCALITY should be [0,100]." << std::endl;
+        exit(0);
+    }
+    // for ycsb
+    if (ycsb_get_ratio + ycsb_put_ratio + ycsb_update_ratio != 1) {
+        std::cout << "the sum of 3 ratios(get、put、update) should be 1."
+                  << std::endl;
         exit(0);
     }
 }
@@ -121,6 +143,15 @@ static void ArgumentsParser(int argc, char *argv[]) {
         } else if (argv[i][1] == 'y' && argv[i][2] == 't' &&
                    argv[i][3] == 'h') {
             ycsb_theta = atof(&argv[i][4]);
+        } else if (argv[i][1] == 'y' && argv[i][2] == 'g' &&
+                   argv[i][3] == 'e' && argv[i][4] == 't') {
+            ycsb_get_ratio = atof(&argv[i][5]);
+        } else if (argv[i][1] == 'y' && argv[i][2] == 'p' &&
+                   argv[i][3] == 'u' && argv[i][4] == 't') {
+            ycsb_put_ratio = atof(&argv[i][5]);
+        } else if (argv[i][1] == 'y' && argv[i][2] == 'u' &&
+                   argv[i][3] == 'p') {
+            ycsb_update_ratio = atof(&argv[i][4]);
         } else {
             PrintUsage();
             exit(0);

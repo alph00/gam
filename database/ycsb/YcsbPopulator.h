@@ -34,21 +34,27 @@ class YcsbPopulator : public BenchmarkPopulator {
         ServerInfo myhost = config__->GetMyHostInfo();
         // int cnt = (myhost.addr_[9] - '8' + 10) % 10;
         int cnt = config__->GetMyPartitionId();
+        int num = config__->GetPartitionNum();
 
-        if (YCSB_POPULATE_NODE_NUM == 1) {
+        if (YCSB_POPULATE_NODE_TYPE == 1) {
             if (cnt == YCSB_POPULATE_NODE_ID) {
                 for (auto i = 0; i < YCSB_TABLE_LENTH; ++i) {
                     InsertMainTableRecord(i, MainTable_record_buf, 0);
                 }
             }
-        } else if (YCSB_POPULATE_NODE_NUM == 3) {
-            for (auto i = 0 + (YCSB_TABLE_LENTH / 3) * cnt;
-                 i < (YCSB_TABLE_LENTH / 3) * (cnt + 1); ++i) {
+        } else if (YCSB_POPULATE_NODE_TYPE == 0) {
+            for (auto i = 0 + (YCSB_TABLE_LENTH / num) * cnt;
+                 i < (YCSB_TABLE_LENTH / num) * (cnt + 1); ++i) {
                 InsertMainTableRecord(i, MainTable_record_buf, 0);
             }
-
+            if (cnt == num - 1) {
+                for (auto i = (YCSB_TABLE_LENTH / num) * (num);
+                     i < YCSB_TABLE_LENTH; ++i) {
+                    InsertMainTableRecord(i, MainTable_record_buf, 0);
+                }
+            }
         } else {
-            std::cout << "YCSB_POPULATE_NODE_NUM error" << endl;
+            std::cout << "YCSB_POPULATE_NODE_TYPE error" << endl;
         }
 
         for (size_t i = 0; i < kTableCount; ++i) {
