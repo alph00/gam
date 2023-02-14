@@ -287,6 +287,8 @@ int Worker::ProcessLocalRequest(WorkRequest* wr) {
         ret = ProcessLocalFree(wr);
     } else if (READ == wr->op) {
         ret = ProcessLocalRead(wr);
+    } else if (LOCAL_VERSION_CHECK == wr->op) {
+        ret = ProcessLocalVersionCheck(wr);
     } else if (WRITE == wr->op) {
         ret = ProcessLocalWrite(wr);
     } else if (MFENCE == wr->op) {

@@ -22,8 +22,18 @@ void Worker::ProcessRemoteRead(Client* client, WorkRequest* wr) {
         DIR_DIRTY) {  // it is shared or exclusively owned (Case 2)
         // add the lock support
         if (directory.IsBlockWLocked(entry)) {
+            epicLog(LOG_INFO, "addr %lx is exclusively locked by %d",
+                    ToGlobal(laddr), GetWorkerId());
             if (wr->flag & TRY_LOCK) {  // reply directly with lock failed
                 epicAssert(wr->flag & LOCKED);
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+                if (wr->flag & WITH_TS_CHECK && directory.CanWaitBlockLock(entry, wr->lock_ts)) {
+                    epicLog(LOG_INFO, "rlock: ts %d waits on addr %lx in home node.", wr->lock_ts, wr->addr);
+                    AddToServeRemoteRequest(wr->addr, client, wr);
+                    directory.unlock(laddr);
+                    return;
+                }
+#endif
                 wr->status = LOCK_FAILED;
                 wr->op = READ_REPLY;
                 directory.unlock(laddr);
@@ -36,8 +46,6 @@ void Worker::ProcessRemoteRead(Client* client, WorkRequest* wr) {
                 AddToServeRemoteRequest(wr->addr, client, wr);
                 directory.unlock(laddr);
             }
-            epicLog(LOG_INFO, "addr %lx is exclusively locked by %d",
-                    ToGlobal(laddr), GetWorkerId());
             return;
         }
 
@@ -132,6 +140,14 @@ void Worker::ProcessRemoteReadCache(Client* client, WorkRequest* wr) {
         if (cache.IsBlockWLocked(cline)) {
             if (wr->flag & TRY_LOCK) {  // reply directly with lock failed
                 epicAssert(wr->flag & LOCKED);
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+                if (wr->flag & WITH_TS_CHECK && cache.CanWaitBlockLock(cline, wr->lock_ts)) {
+                    epicLog(LOG_INFO, "rlock: ts %d waits on addr %lx in node-%d", wr->lock_ts, wr->addr, GetWorkerId());
+                    AddToServeRemoteRequest(wr->addr, client, wr);
+                    cache.unlock(blk);
+                    return;
+                }
+#endif
                 wr->status = LOCK_FAILED;
                 wr->op = READ_REPLY;
                 if (FETCH_AND_SHARED == op_orin) {
@@ -318,6 +334,14 @@ void Worker::ProcessRemoteWrite(Client* client, WorkRequest* wr) {
                 !directory.IsBlockWLocked(entry));
             if (wr->flag & TRY_LOCK) {  // reply directly with lock failed
                 epicAssert(wr->flag & LOCKED);
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+                if (wr->flag & WITH_TS_CHECK && directory.CanWaitBlockLock(entry, wr->lock_ts)) {
+                    epicLog(LOG_INFO, "wlock: ts %d waits on addr %lx in home node.", wr->lock_ts, wr->addr);
+                    AddToServeRemoteRequest(wr->addr, client, wr);
+                    directory.unlock(laddr);
+                    return;
+                }
+#endif
                 wr->status = LOCK_FAILED;
                 wr->op = WRITE_REPLY;
                 wr->counter = 0;
@@ -582,6 +606,14 @@ void Worker::ProcessRemoteWriteCache(Client* client, WorkRequest* wr) {
         if (cache.IsBlockLocked(cline)) {
             if (wr->flag & TRY_LOCK) {  // reply directly with lock failed
                 epicAssert(wr->flag & LOCKED);
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+                if (wr->flag & WITH_TS_CHECK && cache.CanWaitBlockLock(cline, wr->lock_ts)) {
+                    epicLog(LOG_INFO, "rlock: ts %d waits on addr %lx in node-%d", wr->lock_ts, wr->addr, GetWorkerId());
+                    AddToServeRemoteRequest(wr->addr, client, wr);
+                    cache.unlock(to_lock);
+                    return;
+                }
+#endif
                 wr->status = LOCK_FAILED;
                 wr->op = WRITE_REPLY;
                 if (INVALIDATE == op_orin || FETCH_AND_INVALIDATE == op_orin) {

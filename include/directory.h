@@ -5,6 +5,7 @@
 
 #include <list>
 #include <unordered_map>
+#include <set>
 
 #include "hashtable.h"
 #include "map.h"
@@ -28,7 +29,11 @@ struct DirEntry {
     // if lock == 0, no one is holding the lock. otherwise, there are #lock ones
     // holding the lock but if lock = EXCLUSIVE_LOCK_TAG, it is a exclusive lock
     // int lock = 0;
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+    unordered_map<ptr_t, pair<int, set<uint64_t>>> locks;
+#else
     unordered_map<ptr_t, int> locks;
+#endif
 };
 
 class Directory {
@@ -46,6 +51,34 @@ class Directory {
 
     DirState GetState(ptr_t ptr);
     bool InTransitionState(ptr_t ptr);
+
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+    inline bool CanWait(DirEntry* entry, ptr_t ptr, uint64_t timestamp) {
+        epicAssert(entry->locks.count(ptr));
+        epicAssert(entry->locks[ptr].second.find(timestamp) == entry->locks[ptr].second.end());
+        uint64_t oldest_timestamp = *(entry->locks[ptr].second.begin());
+        return oldest_timestamp > timestamp;
+    }
+    int RLock(ptr_t ptr, uint64_t timestamp);
+    int RLock(DirEntry* entry, ptr_t ptr, uint64_t timestamp);
+    bool IsRLocked(ptr_t ptr);
+    bool IsRLocked(DirEntry* entry, ptr_t ptr);
+    int WLock(ptr_t ptr, uint64_t timestamp);
+    int WLock(DirEntry* entry, ptr_t ptr, uint64_t timestamp);
+    bool IsWLocked(ptr_t ptr);
+    bool IsWLocked(DirEntry* entry, ptr_t ptr);
+    void UnLock(ptr_t ptr, uint64_t timestamp);
+    void UnLock(DirEntry*& entry, ptr_t ptr, uint64_t timestamp);
+    bool IsBlockWLocked(ptr_t block);
+    bool IsBlockLocked(ptr_t block);
+
+    int RLock(ptr_t ptr);
+    int RLock(DirEntry* entry, ptr_t ptr);
+    int WLock(ptr_t ptr);
+    int WLock(DirEntry* entry, ptr_t ptr);
+    void UnLock(ptr_t ptr);
+    void UnLock(DirEntry*& entry, ptr_t ptr);
+#else
     int RLock(ptr_t ptr);
     int RLock(DirEntry* entry, ptr_t ptr);
     bool IsRLocked(ptr_t ptr);
@@ -54,6 +87,11 @@ class Directory {
     int WLock(DirEntry* entry, ptr_t ptr);
     bool IsWLocked(ptr_t ptr);
     bool IsWLocked(DirEntry* entry, ptr_t ptr);
+    void UnLock(ptr_t ptr);
+    void UnLock(DirEntry*& entry, ptr_t ptr);
+    bool IsBlockWLocked(ptr_t block);
+    bool IsBlockLocked(ptr_t block);
+#endif
 
     DirEntry* GetEntry(ptr_t ptr) {
         if (dir.count(TOBLOCK(ptr))) {
@@ -63,10 +101,6 @@ class Directory {
         }
     }
 
-    void UnLock(ptr_t ptr);
-    void UnLock(DirEntry*& entry, ptr_t ptr);
-    bool IsBlockWLocked(ptr_t block);
-    bool IsBlockLocked(ptr_t block);
     void Clear(ptr_t ptr, GAddr addr);
     inline list<GAddr>& GetSList(ptr_t ptr) {
         return dir.at(TOBLOCK(ptr))->shared;
@@ -156,6 +190,34 @@ class Directory {
     void UndoShared(DirEntry* entry);
     void Remove(void* ptr, int wid);
     void Remove(DirEntry*& entry, int wid);
+
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+
+    inline bool CanWaitBlockLock(DirEntry* entry, uint64_t timestamp) {
+        epicAssert(IsBlockLocked(entry));
+        for (auto& lock_entry : entry->locks) {
+            if (lock_entry.second.first > 0) {
+                uint64_t cur_oldest_timestamp = *(lock_entry.second.second.begin());
+                if (timestamp >= cur_oldest_timestamp) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    inline int RLock(void* ptr, uint64_t timestamp) { return RLock((ptr_t)ptr, timestamp); }
+    inline int RLock(DirEntry* entry, void* ptr, uint64_t timestamp) {
+        return RLock(entry, (ptr_t)ptr, timestamp);
+    }
+    inline int WLock(void* ptr, uint64_t timestamp) { return WLock((ptr_t)ptr, timestamp); }
+    inline int WLock(DirEntry* entry, void* ptr, uint64_t timestamp) {
+        return WLock(entry, (ptr_t)ptr, timestamp);
+    }
+    inline void UnLock(void* ptr, uint64_t timestamp) { UnLock((ptr_t)ptr, timestamp); }
+    inline void UnLock(DirEntry*& entry, void* ptr, uint64_t timestamp) {
+        UnLock(entry, (ptr_t)ptr, timestamp);
+    }
+#endif
 
     inline int RLock(void* ptr) { return RLock((ptr_t)ptr); }
     inline int RLock(DirEntry* entry, void* ptr) {

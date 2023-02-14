@@ -4,11 +4,11 @@
 
 #include "Record.h"
 
-#if defined(LOCK_WAIT)
-#include "../content/LockWaitContent.h"
-#elif defined(LOCK) || defined(ST)
+// #if defined(LOCK_WAIT)
+// #include "../content/LockWaitContent.h"
+#if defined(LOCK) || defined(ST)
 #include "../content/LockContent.h"
-#elif defined(OCC) || defined(SILO)
+#elif defined(OCC) || defined(SILO) || defined(LOCK_WAIT)
 #include "../content/LockContentWithTs.h"
 #elif defined(SILOCK) || defined(SIOCC)
 #include "../content/SiLockContent.h"
@@ -60,6 +60,10 @@ class TableRecord : public GAMObject {
         return record_->GetSerializeSize() + content_.GetSerializeSize();
     }
 
+    size_t GetRecordSerializeSize() {
+        return record_->GetSerializeSize();
+    }
+
     // static size_t GetContentSerializeSize() {
     //     return content_.GetSerializeSize();
     // }
@@ -82,11 +86,11 @@ TableRecord(Record* record) : record_(record) {}
 
     Record* record_;
 
-#if defined(LOCK_WAIT)
-    LockWaitContent content_;
-#elif defined(LOCK) || defined(ST)
+// #if defined(LOCK_WAIT)
+//     LockWaitContent content_;
+#if defined(LOCK) || defined(ST)
     LockContent content_;
-#elif defined(OCC) || defined(SILO)
+#elif defined(OCC) || defined(SILO) || defined(LOCK_WAIT)
 LockContentWithTs content_;
 #elif defined(SILOCK) || defined(SIOCC)
 SiLockContent content_;

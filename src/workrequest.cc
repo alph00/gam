@@ -70,8 +70,13 @@ int WorkRequest::Ser(char* buf, int& len) {
 #ifdef GFUNC_SUPPORT
         {
             int gid = GetGFuncID(gfunc);
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag, gid,
+                                arg, lock_ts);
+#else
             len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag, gid,
                                 arg);
+#endif
             if (flag & GFUNC) epicAssert(gid != -1);
         }
 #ifdef SELECTIVE_CACHING
@@ -82,7 +87,11 @@ int WorkRequest::Ser(char* buf, int& len) {
 #endif
 
 #else
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag, lock_ts);
+#else 
             len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag);
+#endif
 #ifdef SELECTIVE_CACHING
             if (flag & NOT_CACHE) {
                 memcpy(buf + len, ptr, size);
@@ -95,26 +104,44 @@ int WorkRequest::Ser(char* buf, int& len) {
 #ifdef GFUNC_SUPPORT
         {
             int gid = GetGFuncID(gfunc);
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag, gid,
+                                arg, lock_ts);
+#else
             len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag, gid,
                                 arg);
+#endif
             if (flag & GFUNC) epicAssert(gid != -1);
         }
 #else
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag, lock_ts);
+#else 
             len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag);
+#endif
 #endif
         break;
         case READ:
         case FETCH_AND_SHARED:
         case FETCH_AND_INVALIDATE:
         case INVALIDATE:
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag, lock_ts);
+#else
             len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag);
+#endif
             break;
         case READ_FORWARD:
         case WRITE_FORWARD:
         case INVALIDATE_FORWARD:
         case WRITE_PERMISSION_ONLY_FORWARD:
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag, pid,
+                                pwid, lock_ts);
+#else
             len = appendInteger(buf, lop, id, wid, addr, size, ptr, flag, pid,
                                 pwid);
+#endif
             break;
 #ifndef NOCACHE
         case READ_REPLY:
@@ -208,7 +235,11 @@ int WorkRequest::Deser(const char* buf, int& len) {
         {
 #ifdef GFUNC_SUPPORT
             int gid = 0;
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            p += readInteger(p, id, wid, addr, size, ptr, flag, gid, arg, lock_ts);
+#else
             p += readInteger(p, id, wid, addr, size, ptr, flag, gid, arg);
+#endif
             gfunc = GetGFunc(gid);
             epicLog(LOG_DEBUG, "deser gid = %d, gfunc = %ld", gid, gfunc);
             if (!gfunc) epicAssert(!(flag & GFUNC));
@@ -220,7 +251,11 @@ int WorkRequest::Deser(const char* buf, int& len) {
 #endif
 
 #else
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            p += readInteger(p, id, wid, addr, size, ptr, flag, lock_ts);
+#else
             p += readInteger(p, id, wid, addr, size, ptr, flag);
+#endif
 #ifdef SELECTIVE_CACHING
             if (flag & NOT_CACHE) {
                 ptr = const_cast<char*>(p);
@@ -233,12 +268,20 @@ int WorkRequest::Deser(const char* buf, int& len) {
         case WRITE_PERMISSION_ONLY: {
 #ifdef GFUNC_SUPPORT
             int gid = 0;
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            p += readInteger(p, id, wid, addr, size, ptr, flag, gid, arg, lock_ts);
+#else
             p += readInteger(p, id, wid, addr, size, ptr, flag, gid, arg);
+#endif
             gfunc = GetGFunc(gid);
             epicLog(LOG_DEBUG, "deser gid = %d, gfunc = %ld", gid, gfunc);
             if (!gfunc) epicAssert(!(flag & GFUNC));
 #else
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            p += readInteger(p, id, wid, addr, size, ptr, flag, lock_ts);
+#else
             p += readInteger(p, id, wid, addr, size, ptr, flag);
+#endif
 #endif
             break;
         }
@@ -246,13 +289,21 @@ int WorkRequest::Deser(const char* buf, int& len) {
         case FETCH_AND_SHARED:
         case FETCH_AND_INVALIDATE:
         case INVALIDATE:
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            p += readInteger(p, id, wid, addr, size, ptr, flag, lock_ts);
+#else
             p += readInteger(p, id, wid, addr, size, ptr, flag);
+#endif
             break;
         case READ_FORWARD:
         case WRITE_FORWARD:
         case INVALIDATE_FORWARD:
         case WRITE_PERMISSION_ONLY_FORWARD:
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            p += readInteger(p, id, wid, addr, size, ptr, flag, pid, pwid, lock_ts);
+#else
             p += readInteger(p, id, wid, addr, size, ptr, flag, pid, pwid);
+#endif
             break;
 #ifndef NOCACHE
         case READ_REPLY:
@@ -316,7 +367,13 @@ WorkRequest::WorkRequest(WorkRequest& wr) {
     dup = wr.dup;
 
     is_cache_hit_ = wr.is_cache_hit_;
-    encoded_share_list = wr.encoded_share_list;
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+    lock_ts = wr.lock_ts;
+#endif
+#ifdef USE_LOCAL_VERSION_CHECK
+    target_version = wr.target_version;
+    version_check_status = wr.version_check_status;
+#endif
     epicAssert(*this == wr);
     /*
      * LOCAL_REQUEST flag is the only thing that is not copied!
@@ -340,7 +397,7 @@ bool WorkRequest::operator==(const WorkRequest& wr) {
            wr.parent == this->parent && wr.pid == this->pid &&
            wr.ptr == this->ptr && wr.pwid == this->pwid &&
            wr.size == this->size && wr.status == this->status &&
-           wr.wid == this->wid && wr.encoded_share_list == this->encoded_share_list;
+           wr.wid == this->wid;
 }
 
 WorkRequest::~WorkRequest() {}

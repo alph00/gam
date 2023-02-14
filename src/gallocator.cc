@@ -197,7 +197,83 @@ void GAlloc::SFence() {
     }
 #endif
 }
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+int GAlloc::Lock(Work op, const GAddr addr, const Size count, Flag flag, uint64_t timestamp) {
+#ifdef LOCAL_MEMORY_HOOK
+    return 0;
+#else
+    WorkRequest wr{};
+    wr.op = op;
+    wr.addr = addr;
+#ifdef ASYNC_UNLOCK
+    if (op == UNLOCK) flag |= ASYNC;
+#endif
+    wr.flag = flag;
+    if (flag & WITH_TS_CHECK) {
+        wr.lock_ts = timestamp;
+    }
+    int i = 0, j = 0;
+    GAddr start_blk = TOBLOCK(addr);
+    GAddr end = GADD(addr, count - 1);
+    GAddr end_blk = TOBLOCK(end);
+    while (!wh->SendRequest(&wr)) {
+        i++;
+        GAddr next = GADD(start_blk, i * BLOCK_SIZE);
+        if (next > end_blk) break;
 
+        epicLog(LOG_DEBUG, "lock split to multiple blocks");
+        wr.Reset();
+        wr.op = op;
+        wr.addr = next;
+        wr.flag = flag;
+        if (flag & WITH_TS_CHECK) {
+            wr.lock_ts = timestamp;
+        }
+        epicAssert(wr.addr % BLOCK_SIZE == 0);
+    }
+    if (op == UNLOCK) {
+        epicAssert(!wr.status);
+    } else {
+        if (wr.status) {   // failed at ith lock
+            if (i >= 1) {  // first lock succeed
+                wr.Reset();
+                wr.op = UNLOCK;
+                wr.addr = addr;
+                wr.flag = flag;
+#ifdef ASYNC_UNLOCK
+                wr.flag |= ASYNC;
+#endif
+                if (flag & WITH_TS_CHECK) {
+                    wr.lock_ts = timestamp;
+                }
+                int ret = wh->SendRequest(&wr);
+                epicAssert(!ret);
+            }
+            for (j = 1; j < i; j++) {
+                wr.Reset();
+                wr.addr = GADD(start_blk, j * BLOCK_SIZE);
+                epicAssert(wr.addr % BLOCK_SIZE == 0);
+                epicAssert(wr.addr <= end_blk);
+                wr.op = UNLOCK;
+                wr.flag = flag;
+#ifdef ASYNC_UNLOCK
+                wr.flag |= ASYNC;
+#endif
+                if (flag & WITH_TS_CHECK) {
+                    wr.lock_ts = timestamp;
+                }
+                int ret = wh->SendRequest(&wr);
+                epicAssert(!ret);
+            }
+            epicLog(LOG_DEBUG, "lock failed");
+            return -1;
+        }
+    }
+    epicLog(LOG_DEBUG, "lock succeed");
+    return 0;
+#endif
+}
+#else
 int GAlloc::Lock(Work op, const GAddr addr, const Size count, Flag flag) {
 #ifdef LOCAL_MEMORY_HOOK
     return 0;
@@ -261,6 +337,7 @@ int GAlloc::Lock(Work op, const GAddr addr, const Size count, Flag flag) {
     return 0;
 #endif
 }
+#endif
 
 void GAlloc::RLock(const GAddr addr, const Size count) {
     Lock(RLOCK, addr, count);
@@ -282,6 +359,35 @@ void GAlloc::UnLock(const GAddr addr, const Size count) {
     Lock(UNLOCK, addr, count);
 }
 
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+int GAlloc::TryRLockWithTsCheck(const GAddr addr, const Size count, uint64_t timestamp) {
+    return Lock(RLOCK, addr, count, TRY_LOCK | WITH_TS_CHECK, timestamp);
+}
+int GAlloc::TryWLockWithTsCheck(const GAddr addr, const Size count, uint64_t timestamp) {
+    return Lock(WLOCK, addr, count, TRY_LOCK | WITH_TS_CHECK, timestamp);
+}
+void GAlloc::UnLockWithTs(const GAddr addr, const Size count, uint64_t timestamp) {
+    Lock(UNLOCK, addr, count, WITH_TS_CHECK, timestamp);
+}
+#endif
+#ifdef USE_LOCAL_VERSION_CHECK
+bool GAlloc::CheckVersion(const GAddr base_addr, const Size count, uint64_t version) {
+    WorkRequest wr{};
+    wr.op = LOCAL_VERSION_CHECK;
+    wr.addr = base_addr;
+    wr.size = count;
+    wr.target_version = version;
+    int version_check_status = SUCCESS;
+    wr.version_check_status = &version_check_status;
+    if (wh->SendRequest(&wr)) {
+        epicLog(LOG_WARNING, "CheckVersion failed");
+        return false;
+    } else {
+        return version_check_status == SUCCESS;
+    }
+    // return wh->CheckVersionLocally(base_addr, count, offset, version);
+}
+#endif
 Size GAlloc::Put(uint64_t key, const void* value, Size count) {
     WorkRequest wr{};
     wr.op = PUT;

@@ -3,7 +3,7 @@
 
 // initial data populate 暂时这样设置
 #define YCSB_POPULATE_NODE_TYPE \
-    1  // 由几个节点生成数据  0代表平均分配，1代表集中在某一个节点
+    0  // 由几个节点生成数据  0代表平均分配，1代表集中在某一个节点
 #define YCSB_POPULATE_NODE_ID \
     0  // 当只有一个节点生成数据时，由哪个节点生成数据 // 0：158 ;  1:159 ;
        // 2:160,按照config.txt上的顺序以此类推

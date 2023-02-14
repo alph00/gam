@@ -346,6 +346,45 @@ int Worker::ProcessLocalRLock(WorkRequest* wr) {
             SubmitRequest(cli, lwr, ADD_TO_PENDING | REQUEST_SEND);
         } else {
             int ret;
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            if (wr->flag & WITH_TS_CHECK) {
+                if (entry) {
+                    ret = directory.RLock(entry, ToLocal(wr->addr), wr->lock_ts);
+                } else {
+                    ret = directory.RLock(ToLocal(wr->addr), wr->lock_ts);
+                }
+                if (ret < 0) {  // fail to lock now and can not wait
+                    epicLog(LOG_INFO, "cannot lock addr %lx, will try later",
+                            wr->addr);
+                    wr->status = LOCK_FAILED;
+                } else if (ret > 0) {  // fail to lock now but can wait
+                    epicLog(LOG_INFO, "cannot lock addr %lx, will wait",
+                            wr->addr);
+                    AddToServeLocalRequest(start_blk, wr);
+                    directory.unlock(laddr);
+                    wr->unlock();
+                    return IN_TRANSITION;
+                }
+            } else {
+                if (entry) {
+                    ret = directory.RLock(entry, ToLocal(wr->addr));
+                } else {
+                    ret = directory.RLock(ToLocal(wr->addr));
+                }
+                if (ret) {  // fail to lock
+                    epicLog(LOG_INFO, "cannot lock addr %lx, will try later",
+                            wr->addr);
+                    if (wr->flag & TRY_LOCK) {
+                        wr->status = LOCK_FAILED;
+                    } else {
+                        AddToServeLocalRequest(start_blk, wr);
+                        directory.unlock(laddr);
+                        wr->unlock();
+                        return IN_TRANSITION;
+                    }
+                }
+            }
+#else
             if (entry) {
                 ret = directory.RLock(entry, ToLocal(wr->addr));
             } else {
@@ -363,6 +402,7 @@ int Worker::ProcessLocalRLock(WorkRequest* wr) {
                     return IN_TRANSITION;
                 }
             }
+#endif
         }
         if (wr->counter) {
             directory.unlock(laddr);
@@ -481,6 +521,46 @@ int Worker::ProcessLocalWLock(WorkRequest* wr) {
             }
         } else if (DIR_UNSHARED == state) {
             int ret;
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            if (wr->flag & WITH_TS_CHECK) {
+                epicAssert(wr->flag & TRY_LOCK);
+                if (entry) {
+                    ret = directory.WLock(entry, ToLocal(wr->addr), wr->lock_ts);
+                } else {
+                    ret = directory.WLock(ToLocal(wr->addr), wr->lock_ts);
+                }
+                if (ret < 0) {  // failed to lock now and can not wait
+                    epicLog(LOG_INFO, "cannot lock addr %lx, will try later",
+                            wr->addr);
+                    wr->status = LOCK_FAILED;
+                } else if (ret > 0) {  // failed to lock now but can wait
+                    epicLog(LOG_INFO, "cannot lock addr %lx, will wait",
+                            wr->addr);
+                    AddToServeLocalRequest(start_blk, wr);
+                    directory.unlock(laddr);
+                    wr->unlock();
+                    return IN_TRANSITION;
+                }
+            } else {
+                if (entry) {
+                    ret = directory.WLock(entry, ToLocal(wr->addr));
+                } else {
+                    ret = directory.WLock(ToLocal(wr->addr));
+                }
+                if (ret) {  // failed to lock
+                    epicLog(LOG_INFO, "cannot lock addr %lx, will try later",
+                            wr->addr);
+                    if (wr->flag & TRY_LOCK) {
+                        wr->status = LOCK_FAILED;
+                    } else {
+                        AddToServeLocalRequest(start_blk, wr);
+                        directory.unlock(laddr);
+                        wr->unlock();
+                        return IN_TRANSITION;
+                    }
+                }
+            }
+#else
             if (entry) {
                 ret = directory.WLock(entry, ToLocal(wr->addr));
             } else {
@@ -498,6 +578,7 @@ int Worker::ProcessLocalWLock(WorkRequest* wr) {
                     return IN_TRANSITION;
                 }
             }
+#endif
         }
         if (wr->counter) {
             directory.unlock(laddr);
@@ -572,10 +653,26 @@ int Worker::ProcessLocalUnLock(WorkRequest* wr) {
         GAddr start_blk = TOBLOCK(wr->addr);
         void* laddr = ToLocal(start_blk);
         directory.lock(laddr);
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+        if (wr->flag & WITH_TS_CHECK) {
+            directory.UnLock(ToLocal(wr->addr), wr->lock_ts);
+        } else {
+            directory.UnLock(ToLocal(wr->addr));
+        }
+#else
         directory.UnLock(ToLocal(wr->addr));
+#endif
         directory.unlock(laddr);
     } else {
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+        if (wr->flag & WITH_TS_CHECK) {
+            cache.UnLock(wr->addr, wr->lock_ts);
+        } else {
+            cache.UnLock(wr->addr);
+        }
+#else
         cache.UnLock(wr->addr);
+#endif
     }
     ProcessToServeRequest(wr);
 #ifdef MULTITHREAD
@@ -593,4 +690,200 @@ int Worker::ProcessLocalUnLock(WorkRequest* wr) {
     }
 #endif
     return SUCCESS;
+}
+
+// bool Worker::ProcessLocalVersionCheck(const GAddr base_addr, const Size count, const Size offset, uint64_t version) {
+//     GAddr start = base_addr;
+//     GAddr start_blk = TOBLOCK(start);
+//     GAddr end = GADD(start, count);
+//     if (TOBLOCK(end - 1) != start_blk) {
+//         epicLog(LOG_INFO, "read/write split to multiple blocks");
+//     }
+//     GAddr check_start = base_addr + offset;
+//     GAddr check_end = check_start + sizeof(version);
+//     uint64_t actual_version;
+//     // char* version_bytes = (char*)(&version);
+//     // int bytes_to_check = sizeof(version);
+//     if (IsLocal(base_addr)) {
+//         // now assume the data doesn't cross nodes
+//         epicAssert(IsLocal(end));
+//         for (GAddr i = start_blk; i < end;) {
+//             GAddr nextb = BADD(i, 1);
+//             void* laddr = ToLocal(i);
+//             directory.lock(laddr);
+//             DirEntry* entry = directory.GetEntry(laddr);
+//             // check state and lock
+//             if (entry && (directory.InTransitionState(entry) || entry->state == DIR_DIRTY || directory.IsWLocked(entry, laddr))) {
+//                 return false;
+//             }
+
+//             if (likely(check_start < nextb && check_end > i)) {
+//                 GAddr gs = i > check_start ? i : check_start;
+//                 void* dest = (void*)((ptr_t)(&actual_version) + GMINUS(gs, check_start));
+//                 int len = nextb > check_end ? GMINUS(check_end, gs) : GMINUS(nextb, gs);
+//                 memcpy(dest, ToLocal(gs), len);
+//             }
+
+//             directory.unlock(laddr);
+//             i = nextb;
+//         }
+//     } else {
+
+//         for (GAddr i = start_blk; i < end;) {
+//             GAddr nextb = BADD(i, 1);
+//             cache.lock(i);
+//             CacheLine* cline = cache.GetCLine(i);
+//             // check state and lock
+//             if (!cline || cache.InTransitionState(cline) || cache.IsWLocked(i)) {
+//                 return false;
+//             }
+
+//             epicAssert(cline->state == CACHE_SHARED || cline->state == CACHE_DIRTY);
+
+//             if (likely(check_start < nextb && check_end > i)) {
+//                 GAddr gs = i > check_start ? i : check_start;
+//                 void* source = (void*)((ptr_t)(cline->line) + GMINUS(gs, i));
+//                 void* dest = (void*)((ptr_t)(&actual_version) + GMINUS(gs, check_start));
+//                 int len = nextb > check_end ? GMINUS(check_end, gs) : GMINUS(nextb, gs);
+//                 memcpy(dest, source, len);
+//             }
+
+
+
+//             // if (bytes_to_check > 0 && likely(check_start < nextb)) {
+//             //     char* line_bytes = (char*)(cline->line) + (check_start - i);
+//             //     if (likely(check_end <= nextb)) {
+//             //         // all bytes_to_check in one block
+//             //         if(memcmp(line_bytes, version_bytes, sizeof(version)) != 0) {
+//             //             return false;
+//             //         }
+//             //         check_start += sizeof(version);
+//             //         version_bytes += sizeof(version);
+//             //         bytes_to_check -= sizeof(version);
+//             //     } else {
+//             //         // check bytes can be read
+//             //         int bytes_can_check_this_loop = nextb - check_start;
+//             //         if (bytes_can_check_this_loop > bytes_to_check) {
+//             //             bytes_can_check_this_loop = bytes_to_check;
+//             //         }
+//             //         if(memcmp(line_bytes, version_bytes, bytes_can_check_this_loop) != 0) {
+//             //             return false;
+//             //         }
+//             //         check_start += bytes_can_check_this_loop;
+//             //         version_bytes += bytes_can_check_this_loop;
+//             //         bytes_to_check -= bytes_can_check_this_loop;
+//             //     }
+//             // }
+
+//             cache.unlock(i);
+//             i = nextb;
+//         }
+//     }
+//     // epicAssert(bytes_to_check == 0);
+//     return version == actual_version;
+// }
+
+bool Worker::ProcessLocalVersionCheck(WorkRequest* wr) {
+#ifdef USE_LOCAL_VERSION_CHECK
+    epicAssert(wr->addr);
+    epicAssert(!(wr->flag & ASYNC));
+
+    if (!(wr->flag & FENCE)) {
+        Fence* fence = fences_.at(wr->fd);
+        fence->lock();
+        if (unlikely(IsMFenced(fence, wr))) {
+            AddToFence(fence, wr);
+            epicLog(LOG_DEBUG, "fenced (mfenced = %d, sfenced = %d): %d",
+                    fence->mfenced, fence->sfenced, wr->op);
+            fence->unlock();
+            return FENCE_PENDING;
+        }
+        fence->unlock();
+    }
+
+    GAddr start = wr->addr;
+    GAddr start_blk = TOBLOCK(start);
+    GAddr end = GADD(start, wr->size);
+    if (TOBLOCK(end - 1) != start_blk) {
+        epicLog(LOG_INFO, "read/write split to multiple blocks");
+    }
+    GAddr check_start = end - sizeof(uint64_t);
+    GAddr check_end = check_start + sizeof(uint64_t);
+    uint64_t actual_version;
+    // char* version_bytes = (char*)(&version);
+    // int bytes_to_check = sizeof(version);
+    if (IsLocal(start)) {
+        // now assume the data doesn't cross nodes
+        epicAssert(IsLocal(end));
+        for (GAddr i = start_blk; i < end;) {
+            GAddr nextb = BADD(i, 1);
+            void* laddr = ToLocal(i);
+            directory.lock(laddr);
+            DirEntry* entry = directory.GetEntry(laddr);
+            // check state and lock
+            if (entry && (directory.InTransitionState(entry) || entry->state == DIR_DIRTY || directory.IsWLocked(entry, laddr))) {
+                *(wr->version_check_status) = VERSION_CHECK_FAILED;
+                directory.unlock(laddr);
+                break;
+            }
+
+            if (likely(check_start < nextb && check_end > i)) {
+                GAddr gs = i > check_start ? i : check_start;
+                void* dest = (void*)((ptr_t)(&actual_version) + GMINUS(gs, check_start));
+                int len = nextb > check_end ? GMINUS(check_end, gs) : GMINUS(nextb, gs);
+                memcpy(dest, ToLocal(gs), len);
+            }
+
+            directory.unlock(laddr);
+            i = nextb;
+        }
+    } else {
+
+        for (GAddr i = start_blk; i < end;) {
+            GAddr nextb = BADD(i, 1);
+            cache.lock(i);
+            CacheLine* cline = cache.GetCLine(i);
+            // check state and lock
+            if (!cline || cache.InTransitionState(cline) || cache.IsWLocked(i)) {
+                *(wr->version_check_status) = VERSION_CHECK_FAILED;
+                cache.unlock(i);
+                break;
+            }
+
+            epicAssert(cline->state == CACHE_SHARED || cline->state == CACHE_DIRTY);
+
+            if (likely(check_start < nextb && check_end > i)) {
+                GAddr gs = i > check_start ? i : check_start;
+                void* source = (void*)((ptr_t)(cline->line) + GMINUS(gs, i));
+                void* dest = (void*)((ptr_t)(&actual_version) + GMINUS(gs, check_start));
+                int len = nextb > check_end ? GMINUS(check_end, gs) : GMINUS(nextb, gs);
+                memcpy(dest, source, len);
+            }
+
+            cache.unlock(i);
+            i = nextb;
+        }
+    }
+    if (*(wr->version_check_status) != VERSION_CHECK_FAILED) {
+        *(wr->version_check_status) = wr->target_version == actual_version ? SUCCESS : VERSION_CHECK_FAILED;
+    }
+
+#ifdef MULTITHREAD
+    if (wr->flag & TO_SERVE || wr->flag & FENCE) {
+#endif
+        /*
+         * notify the app thread directly
+         * this can only happen when the request can be fulfilled locally
+         * or we don't need to wait for reply from remote node
+         */
+        if (Notify(wr)) {
+            epicLog(LOG_WARNING, "cannot wake up the app thread");
+        }
+#ifdef MULTITHREAD
+    } else {
+
+    }
+#endif
+    return SUCCESS;
+#endif
 }

@@ -35,6 +35,10 @@ class WorkerHandle {
     int GetWorkersSize() { return worker->GetWorkersSize(); }
     inline void* GetLocal(GAddr addr) { return worker->ToLocal(addr); }
 
+    // inline bool CheckVersionLocally(const GAddr base_addr, const Size count, const Size offset, uint64_t version) {
+    //     return worker->ProcessLocalVersionCheck(base_addr, count, offset, version);
+    // }
+
     void ReportCacheStatistics();
     void ResetCacheStatistics();
 

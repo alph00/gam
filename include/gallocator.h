@@ -18,7 +18,11 @@
 class GAlloc {
     WorkerHandle* wh;  // handle to communicate with local worker
 
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+    int Lock(Work op, const GAddr addr, const Size count, Flag flag = 0, uint64_t timestamp = 0);
+#else
     int Lock(Work op, const GAddr addr, const Size count, Flag flag = 0);
+#endif
 
    public:
     GAlloc(Worker* worker);
@@ -72,6 +76,16 @@ class GAlloc {
 
     int Try_RLock(const GAddr addr, const Size count);
     int Try_WLock(const GAddr addr, const Size count);
+
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+    int TryRLockWithTsCheck(const GAddr addr, const Size count, uint64_t timestamp);
+    int TryWLockWithTsCheck(const GAddr addr, const Size count, uint64_t timestamp);
+    void UnLockWithTs(const GAddr addr, const Size count, uint64_t timestamp);
+#endif
+
+#ifdef USE_LOCAL_VERSION_CHECK
+    bool CheckVersion(const GAddr base_addr, const Size count, uint64_t version);
+#endif
 
     Size Put(uint64_t key, const void* value, Size count);
     Size Get(uint64_t key, void* value);
