@@ -60,7 +60,7 @@ run_thread_test() {
 # thread test
 echo "*********************run thread test**********************"
 result_file=$bin/results/thread
-node_range="8"
+node_range="3"
 thread_range="1 2 3 4 5 6 7 8"
 remote_range="0 50 100"
 shared_range="0" #"0 10 20 30 40 50 60 70 80 90 100"
@@ -105,7 +105,7 @@ run_remote_test() {
 # remote test
 echo "**************************run remote test****************************"
 result_file=$bin/results/remote_ratio
-node_range="8"
+node_range="3"
 thread_range="1"
 remote_range="0 10 20 30 40 50 60 70 80 90 100"
 shared_range="0" #"0 10 20 30 40 50 60 70 80 90 100"
@@ -150,7 +150,7 @@ run_shared_test() {
 # shared test
 echo "**************************run shared test****************************"
 result_file=$bin/results/shared_ratio
-node_range="8"
+node_range="3"
 thread_range="1"
 remote_range="88"
 shared_range="0 10 20 30 40 50 60 70 80 90 100"
@@ -194,9 +194,9 @@ run_shared_test_noeviction() {
 # shared test
 echo "**************************run shared test****************************"
 result_file=$bin/results/shared_ratio-noeviction
-node_range="8"
-thread_range="1"
-remote_range="88"
+node_range="3"
+thread_range="1 5 10"
+remote_range="0 50 100"
 shared_range="0 10 20 30 40 50 60 70 80 90 100"
 read_range="50 100" #"0 50 70 80 90 100"
 space_range="0" #"0 10 20 30 40 50 60 70 80 90 100"
@@ -239,7 +239,7 @@ run_read_test() {
 # read ratio test
 echo "**************************run read ratio test****************************"
 result_file=$bin/results/read_ratio
-node_range="8"
+node_range="3"
 thread_range="1"
 remote_range="0 50 100"
 shared_range="0"
@@ -283,7 +283,7 @@ run_space_test() {
 # space locality test
 echo "**************************run space locality test****************************"
 result_file=$bin/results/space_locality
-node_range="8"
+node_range="3"
 thread_range="1"
 remote_range="100"
 shared_range="0"
@@ -328,7 +328,7 @@ run_time_test() {
 # time locality test
 echo "**************************run time locality test****************************"
 result_file=$bin/results/time_locality
-node_range="8"
+node_range="3"
 thread_range="1"
 remote_range="100"
 shared_range="0"
@@ -373,7 +373,7 @@ run_node_test() {
 # node test
 echo "**************************run node test****************************"
 result_file=$bin/results/node
-node_range="8"
+node_range="3"
 thread_range="1"
 remote_range="0 20 40 60 80 100"
 shared_range="0 50" #"0 20 50 80 100"
@@ -419,10 +419,54 @@ done
 }
 
 #run_thread_test
-run_read_test
+# run_read_test
 #run_time_test
 #run_shared_test
-run_remote_test
-run_space_test
-run_shared_test_noeviction
-run_node_test
+# run_remote_test
+# run_space_test
+# run_shared_test_noeviction
+# run_node_test
+
+result_file=$bin/results/basic
+node_range="4" #"3"
+thread_range="1 5 10"
+remote_range="0" #"0 50 100"
+shared_range="20 40 60 80 100"
+read_range="0 20 40 60 80 100"
+space_range="0 20 40" #"0 10 20 30 40 50 60 70 80 90 100"
+time_range="0" #"0 10 20 30 40 50 60 70 80 90 100"
+op_range="0 1 2"
+cache_th=0.5
+for remote_ratio in $remote_range
+do
+for shared_ratio in $shared_range
+do
+for op_type in $op_range
+do
+for read_ratio in $read_range
+do
+for space_locality in $space_range
+do
+for time_locality in $time_range
+do
+for node in $node_range
+do
+for thread in $thread_range
+do
+#    remote_ratio=`echo "($node-1)*100/$node" | bc`
+#    echo $remote_ratio
+#    if [[ $node = 1 ]]; then
+#        continue;
+#    fi
+	if [[ $remote_ratio -gt 0 && $node = 1 ]]; then
+		continue;
+	fi
+    run
+done
+done
+done
+done
+done
+done
+done
+done
