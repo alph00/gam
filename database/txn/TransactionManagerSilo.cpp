@@ -95,6 +95,14 @@ bool TransactionManager::CommitTransaction(TxnContext *context, TxnParam *param,
                 break;
             }
         } else if (access_ptr->access_type_ == READ_ONLY) {
+#ifdef USE_LOCAL_VERSION_CHECK
+            if (!gallocators[thread_id_]->CheckVersion(access_ptr->access_addr_,
+                                                      table_record->GetSerializeSize(),
+                                                      access_ptr->timestamp_)) {
+                is_success = false;
+                break;
+            }
+#else
             BEGIN_GAM_OPERATION_MEASURE(thread_id_, GAM_READ);
             table_record->Deserialize(access_ptr->access_addr_,
                                       gallocators[thread_id_]);
@@ -108,6 +116,7 @@ bool TransactionManager::CommitTransaction(TxnContext *context, TxnParam *param,
                 is_success = false;
                 break;
             }
+#endif
         }
     }
 

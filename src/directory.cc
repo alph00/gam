@@ -260,6 +260,283 @@ DirEntry* Directory::ToToDirty(void* ptr, GAddr addr) {
     return entry;
 }
 
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+int Directory::RLock(DirEntry* entry, ptr_t ptr, uint64_t timestamp) {
+    epicAssert(entry);
+    epicAssert(!InTransitionState(entry));
+    if (IsWLocked(entry, ptr)) {
+        return CanWait(entry, ptr, timestamp) ? 1 : -1;
+        // return -1;
+    }
+    if (entry->locks.count(ptr)) {
+        epicAssert(entry->locks[ptr].second.find(timestamp) == entry->locks[ptr].second.end());
+        entry->locks[ptr].first++;
+        entry->locks[ptr].second.insert(timestamp);
+    } else {
+        entry->locks[ptr].first = 1;
+        entry->locks[ptr].second.insert(timestamp);
+    }
+    // TODO: add max check and handle
+    epicAssert(entry->locks[ptr].first <= MAX_SHARED_LOCK);
+    epicAssert(IsBlockLocked(entry));
+    return 0;
+}
+
+int Directory::RLock(ptr_t ptr, uint64_t timestamp) {
+    // epicAssert((ptr_t)ptr == TOBLOCK(ptr));
+    ptr_t block = TOBLOCK(ptr);
+    DirEntry* entry = GetEntry(block);
+    if (!entry) {
+        entry = new DirEntry();
+        entry->state =
+            DIR_UNSHARED;  // actually this state only happens when locked
+        entry->locks[ptr].first = 1;
+        entry->locks[ptr].second.insert(timestamp);
+        entry->addr = block;
+        dir[block] = entry;
+        epicAssert(IsBlockLocked(entry));
+        return 0;
+    } else {
+        return RLock(entry, ptr, timestamp);
+    }
+}
+
+int Directory::WLock(DirEntry* entry, ptr_t ptr, uint64_t timestamp) {
+    epicAssert(entry);
+    epicAssert(!InTransitionState(entry));
+    if (IsWLocked(entry, ptr) || IsRLocked(entry, ptr)) {
+        return CanWait(entry, ptr, timestamp) ? 1 : -1;
+        // return -1;
+    }
+    epicAssert(entry->state == DIR_UNSHARED);
+    epicAssert(entry->locks[ptr].second.find(timestamp) == entry->locks[ptr].second.end());
+    entry->locks[ptr].first = EXCLUSIVE_LOCK_TAG;
+    entry->locks[ptr].second.insert(timestamp);
+    epicAssert(IsBlockWLocked(entry) && IsBlockLocked(entry));
+    return 0;
+}
+
+/*
+ * we should call ToUnshared before call WLock
+ */
+int Directory::WLock(ptr_t ptr, uint64_t timestamp) {
+    // epicAssert((ptr_t)ptr == TOBLOCK(ptr));
+    ptr_t block = TOBLOCK(ptr);
+    DirEntry* entry = GetEntry(block);
+    if (!entry) {
+        entry = new DirEntry();
+        entry->state =
+            DIR_UNSHARED;  // actually this state only happens when locked
+        entry->locks[ptr].first = EXCLUSIVE_LOCK_TAG;
+        entry->locks[ptr].second.insert(timestamp);
+        entry->addr = block;
+        dir[block] = entry;
+        epicAssert(IsBlockWLocked(entry) && IsBlockLocked(entry));
+        return 0;
+    } else {
+        return WLock(entry, ptr, timestamp);
+    }
+}
+
+bool Directory::IsWLocked(DirEntry* entry, ptr_t ptr) {
+    if (!entry) return false;
+    return entry->state == DIR_UNSHARED && entry->locks.count(ptr) &&
+           entry->locks.at(ptr).first == EXCLUSIVE_LOCK_TAG;
+}
+
+bool Directory::IsWLocked(ptr_t ptr) {
+    ptr_t block = TOBLOCK(ptr);
+    DirEntry* entry = GetEntry(block);
+    if (!entry) {
+        return false;
+    } else {
+        return IsWLocked(entry, ptr);
+    }
+}
+
+bool Directory::IsRLocked(DirEntry* entry, ptr_t ptr) {
+    if (!entry) return false;
+    return entry->locks.count(ptr) && entry->locks.at(ptr).first > 0 &&
+           entry->locks.at(ptr).first != EXCLUSIVE_LOCK_TAG;
+}
+
+bool Directory::IsRLocked(ptr_t ptr) {
+    ptr_t block = TOBLOCK(ptr);
+    DirEntry* entry = GetEntry(block);
+    if (!dir.count(block)) {
+        return false;
+    } else {
+        return IsRLocked(entry, ptr);
+    }
+}
+
+bool Directory::IsBlockWLocked(DirEntry* entry) {
+    if (!entry) return false;
+    bool wlocked = false;
+    for (auto& en : entry->locks) {
+        if (en.second.first == EXCLUSIVE_LOCK_TAG) {
+            wlocked = true;
+            break;
+        }
+    }
+    return wlocked;
+}
+
+bool Directory::IsBlockWLocked(ptr_t block) {
+    epicAssert(block == TOBLOCK(block));
+    DirEntry* entry = GetEntry(block);
+    if (!entry) {
+        return false;
+    } else {
+        return IsBlockWLocked(entry);
+    }
+}
+
+bool Directory::IsBlockLocked(DirEntry* entry) {
+    if (!entry) return false;
+    return entry->locks.size() > 0 ? true : false;
+}
+
+bool Directory::IsBlockLocked(ptr_t block) {
+    epicAssert(block == TOBLOCK(block));
+    DirEntry* entry = GetEntry(block);
+    if (!entry) {
+        return false;
+    } else {
+        return IsBlockLocked(entry);
+    }
+}
+
+void Directory::UnLock(DirEntry*& entry, ptr_t ptr, uint64_t timestamp) {
+    epicLog(LOG_DEBUG, "entry->state = %d, entry->locks.size() = %d",
+            entry->state, entry->locks.size());
+    epicAssert(
+        entry->state == DIR_UNSHARED ||
+        ((entry->state == DIR_SHARED || entry->state == DIR_TO_UNSHARED) &&
+         IsRLocked(ptr)));
+    epicAssert(entry->locks.count(ptr) && entry->locks.at(ptr).first > 0);
+    entry->locks[ptr].first = IsWLocked(entry, ptr) ? 0 : entry->locks[ptr].first - 1;
+    epicAssert(entry->locks[ptr].second.find(timestamp) != entry->locks[ptr].second.end());
+    entry->locks[ptr].second.erase(timestamp);
+    if (entry->locks[ptr].first == 0) {
+        entry->locks.erase(ptr);
+    }
+    if (entry->state == DIR_UNSHARED && entry->locks.size() == 0) {
+        dir.erase(entry->addr);
+        delete entry;
+        entry = nullptr;
+    }
+}
+
+void Directory::UnLock(ptr_t ptr, uint64_t timestamp) {
+    ptr_t block = TOBLOCK(ptr);
+    try {
+        DirEntry* entry = dir.at(block);
+        UnLock(entry, ptr, timestamp);
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the directory entry");
+        epicAssert(false);
+    }
+}
+
+int Directory::RLock(DirEntry* entry, ptr_t ptr) {
+    epicAssert(entry);
+    epicAssert(!InTransitionState(entry));
+    if (IsWLocked(entry, ptr)) {
+        return -1;
+    }
+    if (entry->locks.count(ptr)) {
+        entry->locks[ptr].first++;
+    } else {
+        entry->locks[ptr].first = 1;
+    }
+    // TODO: add max check and handle
+    epicAssert(entry->locks[ptr].first <= MAX_SHARED_LOCK);
+    epicAssert(IsBlockLocked(entry));
+    return 0;
+}
+
+int Directory::RLock(ptr_t ptr) {
+    // epicAssert((ptr_t)ptr == TOBLOCK(ptr));
+    ptr_t block = TOBLOCK(ptr);
+    DirEntry* entry = GetEntry(block);
+    if (!entry) {
+        entry = new DirEntry();
+        entry->state =
+            DIR_UNSHARED;  // actually this state only happens when locked
+        entry->locks[ptr].first = 1;
+        entry->addr = block;
+        dir[block] = entry;
+        epicAssert(IsBlockLocked(entry));
+        return 0;
+    } else {
+        return RLock(entry, ptr);
+    }
+}
+
+int Directory::WLock(DirEntry* entry, ptr_t ptr) {
+    epicAssert(entry);
+    epicAssert(!InTransitionState(entry));
+    if (IsWLocked(entry, ptr) || IsRLocked(entry, ptr)) {
+        return -1;
+    }
+    epicAssert(entry->state == DIR_UNSHARED);
+    entry->locks[ptr].first = EXCLUSIVE_LOCK_TAG;
+    epicAssert(IsBlockWLocked(entry) && IsBlockLocked(entry));
+    return 0;
+}
+
+/*
+ * we should call ToUnshared before call WLock
+ */
+int Directory::WLock(ptr_t ptr) {
+    // epicAssert((ptr_t)ptr == TOBLOCK(ptr));
+    ptr_t block = TOBLOCK(ptr);
+    DirEntry* entry = GetEntry(block);
+    if (!entry) {
+        entry = new DirEntry();
+        entry->state =
+            DIR_UNSHARED;  // actually this state only happens when locked
+        entry->locks[ptr].first = EXCLUSIVE_LOCK_TAG;
+        entry->addr = block;
+        dir[block] = entry;
+        epicAssert(IsBlockWLocked(entry) && IsBlockLocked(entry));
+        return 0;
+    } else {
+        return WLock(entry, ptr);
+    }
+}
+
+void Directory::UnLock(DirEntry*& entry, ptr_t ptr) {
+    epicLog(LOG_DEBUG, "entry->state = %d, entry->locks.size() = %d",
+            entry->state, entry->locks.size());
+    epicAssert(
+        entry->state == DIR_UNSHARED ||
+        ((entry->state == DIR_SHARED || entry->state == DIR_TO_UNSHARED) &&
+         IsRLocked(ptr)));
+    epicAssert(entry->locks.count(ptr) && entry->locks.at(ptr).first > 0);
+    entry->locks[ptr].first = IsWLocked(entry, ptr) ? 0 : entry->locks[ptr].first - 1;
+    if (entry->locks[ptr].first == 0) {
+        entry->locks.erase(ptr);
+    }
+    if (entry->state == DIR_UNSHARED && entry->locks.size() == 0) {
+        dir.erase(entry->addr);
+        delete entry;
+        entry = nullptr;
+    }
+}
+
+void Directory::UnLock(ptr_t ptr) {
+    ptr_t block = TOBLOCK(ptr);
+    try {
+        DirEntry* entry = dir.at(block);
+        UnLock(entry, ptr);
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the directory entry");
+        epicAssert(false);
+    }
+}
+#else
 int Directory::RLock(DirEntry* entry, ptr_t ptr) {
     epicAssert(entry);
     epicAssert(!InTransitionState(entry));
@@ -426,6 +703,7 @@ void Directory::UnLock(ptr_t ptr) {
         epicAssert(false);
     }
 }
+#endif
 
 void Directory::Clear(DirEntry*& entry, GAddr addr) {
     if (!entry) {

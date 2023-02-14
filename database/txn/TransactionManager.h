@@ -76,6 +76,44 @@ class TransactionManager {
     bool SelectRecordCC(TxnContext* context, size_t table_id, Record*& record,
                         const GAddr& data_addr, AccessType access_type);
 
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+    bool TryWLockRecordWithTsCheck(const GAddr& data_addr, size_t data_size, uint64_t start_ts) {
+        epicLog(LOG_DEBUG,
+                "TryWLockRecordWithTsCheck, this=%p, data_addr=%lx, data_size=%d", this,
+                data_addr, data_size);
+        bool success = true;
+        size_t try_count = 0;
+        while (gallocators[thread_id_]->TryWLockWithTsCheck(data_addr, data_size, start_ts) != 0) {
+            if (++try_count >= kTryLockLimit) {
+                success = false;
+                break;
+            }
+        }
+        return success;
+    }
+
+    bool TryRLockRecordWithTsCheck(const GAddr& data_addr, size_t data_size, uint64_t start_ts) {
+        epicLog(LOG_DEBUG,
+                "TryRLockRecordWithTsCheck, this=%p, data_addr=%lx, data_size=%d", this,
+                data_addr, data_size);
+        bool success = true;
+        size_t try_count = 0;
+        while (gallocators[thread_id_]->TryRLockWithTsCheck(data_addr, data_size, start_ts) != 0) {
+            if (++try_count >= kTryLockLimit) {
+                success = false;
+                break;
+            }
+        }
+        return success;
+    }
+
+    void UnLockRecordWithTs(const GAddr& data_addr, size_t data_size, uint64_t start_ts) {
+        epicLog(LOG_DEBUG, "this=%p, data_addr=%lx, data_size=%d", this,
+                data_addr, data_size);
+        gallocators[thread_id_]->UnLockWithTs(data_addr, data_size, start_ts);
+    }
+#endif
+
     bool TryWLockRecord(const GAddr& data_addr, size_t data_size) {
         epicLog(LOG_DEBUG,
                 "TryWLockRecord, this=%p, data_addr=%lx, data_size=%d", this,
@@ -177,8 +215,8 @@ class TransactionManager {
    protected:
     size_t thread_id_;
     size_t thread_count_;
-    // uint64_t start_timestamp_;
-    // bool is_first_access_;
+    uint64_t start_timestamp_;
+    bool is_first_access_;
     uint64_t local_epoch_;
     uint32_t local_ts_;
 

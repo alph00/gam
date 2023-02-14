@@ -367,6 +367,50 @@ int Cache::Lock(WorkRequest* wr) {
                 nread++;
             }
 #endif
+
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+            if (wr->flag & WITH_TS_CHECK) {
+                int ret = RLock(cline, wr->addr, wr->lock_ts);
+                if (ret < 0) {
+                    epicLog(LOG_INFO, "cannot shared lock addr %lx, will try later",
+                            wr->addr);
+                    wr->is_cache_hit_ = false;
+
+                    wr->status = LOCK_FAILED;
+                    unlock(i);
+                    wr->unlock();
+                    return SUCCESS;
+                } else if (ret > 0) {
+                    epicLog(LOG_INFO, "cannot shared lock addr %lx, will wait",
+                            wr->addr);
+                    wr->is_cache_hit_ = false;
+
+                    worker->AddToServeLocalRequest(i, wr);
+                    unlock(i);
+                    wr->unlock();
+                    return IN_TRANSITION;
+                }
+            } else {
+                if (RLock(cline, wr->addr)) {  // failed to lock
+                    epicLog(LOG_INFO, "cannot shared lock addr %lx, will try later",
+                            wr->addr);
+
+                    wr->is_cache_hit_ = false;
+
+                    if (wr->flag & TRY_LOCK) {
+                        wr->status = LOCK_FAILED;
+                        unlock(i);
+                        wr->unlock();
+                        return SUCCESS;
+                    } else {
+                        worker->AddToServeLocalRequest(i, wr);
+                        unlock(i);
+                        wr->unlock();
+                        return IN_TRANSITION;
+                    }
+                }
+            }
+#else
             if (RLock(cline, wr->addr)) {  // failed to lock
                 epicLog(LOG_INFO, "cannot shared lock addr %lx, will try later",
                         wr->addr);
@@ -385,6 +429,7 @@ int Cache::Lock(WorkRequest* wr) {
                     return IN_TRANSITION;
                 }
             }
+#endif
 #ifdef USE_LRU
             UnLinkLRU(cline);
             LinkLRU(cline);
@@ -463,6 +508,52 @@ int Cache::Lock(WorkRequest* wr) {
                 LinkLRU(cline);
 #endif
 
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+                if (wr->flag & WITH_TS_CHECK) {
+                    int ret = WLock(cline, wr->addr, wr->lock_ts);
+                    if (ret < 0) {
+                        wr->is_cache_hit_ = false;
+                        epicLog(LOG_INFO,
+                                "cannot exclusive lock addr %lx, will try later",
+                                wr->addr);
+                        wr->status = LOCK_FAILED;
+                        unlock(i);
+                        wr->unlock();
+                        return SUCCESS;
+                    } else if (ret > 0) {
+                        wr->is_cache_hit_ = false;
+                        epicLog(LOG_INFO,
+                                "cannot exclusive lock addr %lx, will wait",
+                                wr->addr);
+                        // to_serve_local_requests[TOBLOCK(wr->addr)].push(wr);
+                        worker->AddToServeLocalRequest(i, wr);
+                        unlock(i);
+                        wr->unlock();
+                        return IN_TRANSITION;
+                    }
+                } else {
+                    if (WLock(cline, wr->addr)) {  // failed to lock
+
+                        wr->is_cache_hit_ = false;
+                        epicLog(LOG_INFO,
+                                "cannot exclusive lock addr %lx, will try later",
+                                wr->addr);
+
+                        if (wr->flag & TRY_LOCK) {
+                            wr->status = LOCK_FAILED;
+                            unlock(i);
+                            wr->unlock();
+                            return SUCCESS;
+                        } else {
+                            // to_serve_local_requests[TOBLOCK(wr->addr)].push(wr);
+                            worker->AddToServeLocalRequest(i, wr);
+                            unlock(i);
+                            wr->unlock();
+                            return IN_TRANSITION;
+                        }
+                    }
+                }
+#else
                 if (WLock(cline, wr->addr)) {  // failed to lock
 
                     wr->is_cache_hit_ = false;
@@ -483,6 +574,7 @@ int Cache::Lock(WorkRequest* wr) {
                         return IN_TRANSITION;
                     }
                 }
+#endif
             }
         } else {
             epicLog(LOG_WARNING, "unknown op in cache operations");
@@ -997,7 +1089,133 @@ bool Cache::InTransitionState(GAddr addr) {
     CacheState s = GetState(addr);
     return InTransitionState(s);
 }
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+int Cache::RLock(GAddr addr, uint64_t timestamp) {
+    GAddr block = GTOBLOCK(addr);
+    try {
+        CacheLine* cline = caches.at(block);
+        return RLock(cline, addr, timestamp);
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the cache line");
+        return -1;
+    }
+}
 
+int Cache::WLock(GAddr addr, uint64_t timestamp) {
+    GAddr block = GTOBLOCK(addr);
+    try {
+        CacheLine* cline = caches.at(block);
+        return WLock(cline, addr, timestamp);
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the cache line");
+        return -1;
+    }
+}
+void Cache::UnLock(GAddr addr, uint64_t timestamp) {
+    GAddr block = GTOBLOCK(addr);
+    lock(block);
+    try {
+        CacheLine* cline = caches.at(block);
+        epicAssert(cline->locks.count(addr));
+        epicAssert(cline->locks.at(addr).second.find(timestamp) != cline->locks.at(addr).second.find(timestamp));
+        if (cline->locks.at(addr).first == EXCLUSIVE_LOCK_TAG) {  // exclusive lock
+            cline->locks.erase(addr);
+        } else {
+            cline->locks.at(addr).first--;
+            cline->locks.at(addr).second.erase(timestamp);
+            if (cline->locks.at(addr).first == 0) cline->locks.erase(addr);
+        }
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the cache line");
+        epicAssert(false);
+    }
+    unlock(block);
+}
+int Cache::RLock(GAddr addr) {
+    GAddr block = GTOBLOCK(addr);
+    try {
+        CacheLine* cline = caches.at(block);
+        return RLock(cline, addr);
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the cache line");
+        return -1;
+    }
+}
+
+int Cache::WLock(GAddr addr) {
+    GAddr block = GTOBLOCK(addr);
+    try {
+        CacheLine* cline = caches.at(block);
+        return WLock(cline, addr);
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the cache line");
+        return -1;
+    }
+}
+
+bool Cache::IsWLocked(GAddr addr) {
+    GAddr block = GTOBLOCK(addr);
+    try {
+        CacheLine* cline = caches.at(block);
+        return IsWLocked(cline, addr);
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the cache line");
+        return false;
+    }
+}
+
+bool Cache::IsRLocked(GAddr addr) {
+    GAddr block = GTOBLOCK(addr);
+    try {
+        CacheLine* cline = caches.at(block);
+        return IsRLocked(cline, addr);
+    } catch (const exception& e) {
+        epicLog(LOG_WARNING, "Unexpected: cannot find the cache line");
+        return false;
+    }
+}
+
+void Cache::UnLock(GAddr addr) {
+    GAddr block = GTOBLOCK(addr);
+    lock(block);
+    try {
+        CacheLine* cline = caches.at(block);
+        epicAssert(cline->locks.count(addr));
+        if (cline->locks.at(addr).first == EXCLUSIVE_LOCK_TAG) {  // exclusive lock
+            cline->locks.erase(addr);
+        } else {
+            cline->locks.at(addr).first--;
+            if (cline->locks.at(addr).first == 0) cline->locks.erase(addr);
+        }
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the cache line");
+        epicAssert(false);
+    }
+    unlock(block);
+}
+
+bool Cache::IsBlockLocked(GAddr block) {
+    epicAssert(GTOBLOCK(block) == block);
+    try {
+        CacheLine* cline = caches.at(block);
+        return IsBlockLocked(cline);
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the cache line");
+        return false;
+    }
+}
+
+bool Cache::IsBlockWLocked(GAddr block) {
+    epicAssert(GTOBLOCK(block) == block);
+    try {
+        CacheLine* cline = caches.at(block);
+        return IsBlockWLocked(cline);
+    } catch (const exception& e) {
+        epicLog(LOG_FATAL, "Unexpected: cannot find the cache line");
+        return false;
+    }
+}
+#else
 int Cache::RLock(GAddr addr) {
     GAddr block = GTOBLOCK(addr);
     try {
@@ -1082,6 +1300,7 @@ bool Cache::IsBlockWLocked(GAddr block) {
         return false;
     }
 }
+#endif
 
 #ifdef SELECTIVE_CACHING
 void Cache::InitCacheCLine(CacheLine* cline, bool write) {

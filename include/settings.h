@@ -10,6 +10,10 @@ using namespace std;
 
 // #define NDEBUG
 
+#define ENABLE_LOCK_TIMESTAMP_CHECK
+
+#define USE_LOCAL_VERSION_CHECK
+
 #define USE_SIMPLE_MAP
 
 #define HARDWARE_CACHE_LINE 64

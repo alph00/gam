@@ -40,3 +40,22 @@ compile_commands.json
 
 # ycsbsh
 experiment-ycsb-qfs.sh
+
+test/lock_test
+database/tpcc/tpcc
+database/ycsb/ycsb
+test/perf.data
+test/result.csv
+database/tpcc/perf.data
+database/tpcc/perf.data.old
+database/test/tpcc_populate_test
+database/test/hash_index_test
+.vscode/settings.json
+scripts/log.lab505-155
+scripts/log.lab505-158
+scripts/log.lab505-159
+scripts/log.lab505-160
+scripts/results/basic
+src/result.csv
+test/benchmark
+test/perf.data.old

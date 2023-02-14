@@ -40,7 +40,11 @@ struct CacheLine {
     void* line = nullptr;
     GAddr addr = 0;
     CacheState state = CACHE_INVALID;
-    unordered_map<GAddr, int> locks;
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+    unordered_map<ptr_t, pair<int, set<uint64_t>>> locks;
+#else
+    unordered_map<ptr_t, int> locks;
+#endif
     // used for LRU
 #ifdef USE_APPR_LRU
     long lruclock;
@@ -246,7 +250,115 @@ class Cache {
         return CACHE_TO_DIRTY == s || CACHE_TO_INVALID == s ||
                CACHE_TO_SHARED == s;
     }
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+    inline bool CanWait(CacheLine* cline, GAddr addr, uint64_t timestamp) {
+        epicAssert(cline->locks.count(addr));
+        epicAssert(cline->locks[addr].second.find(timestamp) == cline->locks[addr].second.end());
+        uint64_t oldest_timestamp = *(cline->locks[addr].second.begin());
+        return oldest_timestamp > timestamp;
+    }
 
+    inline bool CanWaitBlockLock(CacheLine* cline, uint64_t timestamp) {
+        epicAssert(IsBlockLocked(cline));
+        for (auto& lock_entry : cline->locks) {
+            if (lock_entry.second.first > 0) {
+                uint64_t cur_oldest_timestamp = *(lock_entry.second.second.begin());
+                if (timestamp >= cur_oldest_timestamp) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    int RLock(GAddr addr, uint64_t timestamp);
+    inline int RLock(CacheLine* cline, GAddr addr, uint64_t timestamp) {
+        if (IsWLocked(cline, addr)) {
+            return CanWait(cline, addr, timestamp) ? 1 : -1;
+        }
+        if (cline->locks.count(addr)) {
+            epicAssert(cline->locks[addr].second.find(timestamp) == cline->locks[addr].second.end());
+            cline->locks[addr].first++;
+            cline->locks[addr].second.insert(timestamp);
+        } else {
+            cline->locks[addr].first = 1;
+            cline->locks[addr].second.insert(timestamp);
+        }
+        epicAssert(cline->locks[addr].first <= MAX_SHARED_LOCK);
+        return 0;
+    }
+
+    int WLock(GAddr addr, uint64_t timestamp);
+    inline int WLock(CacheLine* cline, GAddr addr, uint64_t timestamp) {
+        if (IsWLocked(cline, addr) || IsRLocked(cline, addr)) {
+            return CanWait(cline, addr, timestamp) ? 1 : -1;
+        }
+        epicAssert(cline->state == CACHE_DIRTY);
+        epicAssert(cline->locks[addr].second.find(timestamp) == cline->locks[addr].second.end());
+        cline->locks[addr].first = EXCLUSIVE_LOCK_TAG;
+        cline->locks[addr].second.insert(timestamp);
+        return 0;
+    }
+    void UnLock(GAddr addr, uint64_t timestamp);
+
+    int RLock(GAddr addr);
+    inline int RLock(CacheLine* cline, GAddr addr) {
+        if (IsWLocked(cline, addr)) return -1;
+        if (cline->locks.count(addr)) {
+            cline->locks[addr].first++;
+        } else {
+            cline->locks[addr].first = 1;
+        }
+        epicAssert(cline->locks[addr].first <= MAX_SHARED_LOCK);
+        return 0;
+    }
+    int RLock(CacheLine* cline) = delete;
+
+    int WLock(GAddr addr);
+    inline int WLock(CacheLine* cline, GAddr addr) {
+        if (IsWLocked(cline, addr) || IsRLocked(cline, addr)) return -1;
+        cline->locks[addr].first = EXCLUSIVE_LOCK_TAG;
+        return 0;
+    }
+    int WLock(CacheLine* cline) = delete;
+
+    bool IsWLocked(GAddr addr);
+    inline bool IsWLocked(CacheLine* cline, GAddr addr) {
+        return cline->locks.count(addr) &&
+               cline->locks.at(addr).first == EXCLUSIVE_LOCK_TAG;
+    }
+
+    bool IsRLocked(GAddr addr);
+    inline bool IsRLocked(CacheLine* cline, GAddr addr) {
+        if (cline->locks.count(addr) == 0 ||
+            cline->locks.at(addr).first == EXCLUSIVE_LOCK_TAG) {
+            return false;
+        } else {
+            epicAssert(cline->state != CACHE_INVALID);
+            epicAssert(cline->locks.at(addr).first > 0);
+            return true;
+        }
+    }
+
+    bool IsBlockLocked(GAddr block);
+    inline bool IsBlockLocked(CacheLine* cline) {
+        return cline->locks.size() > 0 ? true : false;
+    }
+
+    bool IsBlockWLocked(GAddr block);
+    inline bool IsBlockWLocked(CacheLine* cline) {
+        bool wlocked = false;
+        for (auto& entry : cline->locks) {
+            if (entry.second.first == EXCLUSIVE_LOCK_TAG) {
+                wlocked = true;
+                break;
+            }
+        }
+        return wlocked;
+    }
+
+    void UnLock(GAddr addr);
+#else
     int RLock(GAddr addr);
     inline int RLock(CacheLine* cline, GAddr addr) {
         if (IsWLocked(cline, addr)) return -1;
@@ -304,6 +416,8 @@ class Cache {
     }
 
     void UnLock(GAddr addr);
+#endif
+    
     void UndoShared(GAddr addr);
     inline void UndoShared(CacheLine* cline) { cline->state = CACHE_SHARED; }
     inline size_t GetUsedBytes() { return used_bytes; }

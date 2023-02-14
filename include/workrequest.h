@@ -21,6 +21,7 @@
 enum Work {
     MALLOC = 1,
     READ,
+    LOCAL_VERSION_CHECK,
     FETCH_AND_SHARED,
     READ_FORWARD,
     WRITE,
@@ -85,6 +86,7 @@ enum Status {
     WRITE_ERROR,
     UNRECOGNIZED_OP,
     LOCK_FAILED,
+    VERSION_CHECK_FAILED,
     NOT_EXIST
 };
 
@@ -108,6 +110,8 @@ typedef int Flag;
 #define FENCE (1 << 12)
 #define NOT_CACHE (1 << 13)
 #define GFUNC (1 << 14)
+#define WITH_TS_CHECK (1 << 15)
+// #define UNLOCK_WITH_TS (1 << 16)
 
 #define MASK_ID 1
 #define MASK_OP 1 << 1
@@ -169,7 +173,13 @@ struct WorkRequest {
     uint64_t arg = 0;
 #endif
 
-    uint64_t encoded_share_list;
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+    uint64_t lock_ts = 0;
+#endif
+#ifdef USE_LOCAL_VERSION_CHECK
+    int* version_check_status = nullptr;
+    uint64_t target_version = 0;
+#endif
 
     WorkRequest()
         : fd(),
@@ -186,8 +196,7 @@ struct WorkRequest {
           counter(),
           parent(),
           next(),
-          dup(),
-          encoded_share_list(0) {
+          dup() {
 #if !defined(USE_PIPE_W_TO_H) || !defined(USE_PIPE_H_TO_W)
         notify_buf = nullptr;
 #endif
@@ -258,8 +267,13 @@ struct WorkRequest {
 #endif
 
         is_cache_hit_ = true;
-
-        encoded_share_list = 0;
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+        lock_ts = 0;
+#endif
+#ifdef USE_LOCAL_VERSION_CHECK
+        target_version = 0;
+        version_check_status = nullptr;
+#endif
         unlock();
     }
 
