@@ -306,6 +306,17 @@ class Worker : public Server {
     }
 
     void SyncMaster(Work op = UPDATE_MEM_STATS, WorkRequest* parent = nullptr);
+    void InitMemStatsForTest(Size total, Size free) {
+        for (auto& entry : widCliMapWorker) {
+            if (entry.first == GetWorkerId()) {
+                continue;
+            }
+            if (entry.second->GetTotalMem() == 0) {
+                entry.second->SetMemStat(total, free);
+            }
+        }
+    }
+
     unsigned long long SubmitRequest(Client* cli, WorkRequest* wr,
                                      int flag = REQUEST_SEND | REQUEST_NO_ID,
                                      void* dest = nullptr, void* src = nullptr,

@@ -114,6 +114,10 @@ class GAlloc {
         }
     }
 
+    void InitWorkerMemStatsForTest(Size total, Size free) {
+        wh->InitWorkerMemStatsForTest(total, free);
+    }
+
     void ReportCacheStatistics() { wh->ReportCacheStatistics(); }
 
     void ResetCacheStatistics() { wh->ResetCacheStatistics(); }

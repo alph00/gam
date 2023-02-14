@@ -39,6 +39,10 @@ class WorkerHandle {
     //     return worker->ProcessLocalVersionCheck(base_addr, count, offset, version);
     // }
 
+    void InitWorkerMemStatsForTest(Size total, Size free) {
+        worker->InitMemStatsForTest(total, free);
+    }
+
     void ReportCacheStatistics();
     void ResetCacheStatistics();
 

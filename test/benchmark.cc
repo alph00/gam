@@ -664,6 +664,10 @@ int main(int argc, char* argv[]) {
 
     sleep(1);
 
+    // NOTE(weihaosun): since gam remote malloc doesn't work here, we set mem stats for test directly
+    Size total_mem = conf.size - conf.size * conf.cache_th;
+    alloc->InitWorkerMemStatsForTest(total_mem, total_mem * 0.95);
+
     // sync with all the other workers
     // check all the workers are started
     int id;
