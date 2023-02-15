@@ -43,8 +43,7 @@ class YcsbPopulator : public BenchmarkPopulator {
                 }
             }
         } else if (YCSB_POPULATE_NODE_TYPE == 0) {
-            for (auto i = 0 + (YCSB_TABLE_LENTH / num) * cnt;
-                 i < (YCSB_TABLE_LENTH / num) * (cnt + 1); ++i) {
+            for (auto i = cnt; i < (YCSB_TABLE_LENTH / num) * (num); i += num) {
                 InsertMainTableRecord(i, MainTable_record_buf, 0);
             }
             if (cnt == num - 1) {
