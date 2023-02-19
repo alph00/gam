@@ -146,7 +146,7 @@ class TpccInitiator : public BenchmarkInitiator {
         columns.push_back(new ColumnInfo("c_payment_cnt", ValueType::INT));
         columns.push_back(new ColumnInfo("c_delivery_cnt", ValueType::INT));
         columns.push_back(new ColumnInfo("c_data", ValueType::VARCHAR,
-                                         static_cast<size_t>(500)));
+                                         static_cast<size_t>(C_DATA_SIZE)));
         columns.push_back(new ColumnInfo("meta", ValueType::META));
 
         schema = new RecordSchema(CUSTOMER_TABLE_ID);

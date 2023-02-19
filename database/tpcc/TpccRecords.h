@@ -106,7 +106,7 @@ struct CustomerRecord {
     double c_ytd_payment_;
     int c_payment_cnt_;
     int c_delivery_cnt_;
-    char c_data_[500];
+    char c_data_[C_DATA_SIZE];
 };
 
 static std::string CustomerToString(CustomerRecord &customer) {

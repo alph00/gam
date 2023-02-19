@@ -309,8 +309,10 @@ class TpccPopulator : public BenchmarkPopulator {
         record->c_ytd_payment_ = INITIAL_YTD_PAYMENT;
         record->c_payment_cnt_ = INITIAL_PAYMENT_CNT;
         record->c_delivery_cnt_ = INITIAL_DELIVERY_CNT;
+        // std::string data =
+        //     TpccRandomGenerator::GenerateAString(MIN_C_DATA, MAX_C_DATA);
         std::string data =
-            TpccRandomGenerator::GenerateAString(MIN_C_DATA, MAX_C_DATA);
+            TpccRandomGenerator::GenerateAString(C_DATA_SIZE, C_DATA_SIZE);
         memcpy(record->c_data_, data.c_str(), data.size());
     }
 
@@ -414,7 +416,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->i_id_);
         record_buf->SetColumn(1, &record_ptr->i_im_id_);
         record_buf->SetColumn(2, record_ptr->i_name_, 32);
@@ -433,7 +435,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->w_id_);
         record_buf->SetColumn(1, record_ptr->w_name_, 16);
         record_buf->SetColumn(2, record_ptr->w_street_1_, 32);
@@ -455,7 +457,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->d_id_);
         record_buf->SetColumn(1, &record_ptr->d_w_id_);
         record_buf->SetColumn(2, record_ptr->d_name_, 16);
@@ -480,7 +482,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->c_id_);
         record_buf->SetColumn(1, &record_ptr->c_d_id_);
         record_buf->SetColumn(2, &record_ptr->c_w_id_);
@@ -501,7 +503,7 @@ class TpccPopulator : public BenchmarkPopulator {
         record_buf->SetColumn(17, &record_ptr->c_ytd_payment_);
         record_buf->SetColumn(18, &record_ptr->c_payment_cnt_);
         record_buf->SetColumn(19, &record_ptr->c_delivery_cnt_);
-        record_buf->SetColumn(20, record_ptr->c_data_, 500);
+        record_buf->SetColumn(20, record_ptr->c_data_, C_DATA_SIZE);
         record_buf->SetVisible(true);
         record_buf->Serialize(data_addr, gallocator);
         IndexKey key = GetCustomerPrimaryKey(
@@ -515,7 +517,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->s_i_id_);
         record_buf->SetColumn(1, &record_ptr->s_w_id_);
         record_buf->SetColumn(2, &record_ptr->s_quantity_);
@@ -539,7 +541,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->o_id_);
         record_buf->SetColumn(1, &record_ptr->o_c_id_);
         record_buf->SetColumn(2, &record_ptr->o_d_id_);
@@ -561,7 +563,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->o_id_);
         record_buf->SetColumn(1, &record_ptr->d_id_);
         record_buf->SetColumn(2, &record_ptr->w_id_);
@@ -579,7 +581,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->ol_o_id_);
         record_buf->SetColumn(1, &record_ptr->ol_d_id_);
         record_buf->SetColumn(2, &record_ptr->ol_w_id_);
@@ -606,7 +608,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->h_c_id_);
         record_buf->SetColumn(1, &record_ptr->h_c_d_id_);
         record_buf->SetColumn(2, &record_ptr->h_c_w_id_);
@@ -629,7 +631,7 @@ class TpccPopulator : public BenchmarkPopulator {
         GAlloc *gallocator = gallocators[thread_id];
         Record *record_buf = table_record_buf->record_;
         GAddr data_addr =
-            gallocator->Malloc(table_record_buf->GetSerializeSize());
+            gallocator->AlignedMalloc(table_record_buf->GetSerializeSize());
         record_buf->SetColumn(0, &record_ptr->d_id_);
         record_buf->SetColumn(1, &record_ptr->w_id_);
         record_buf->SetColumn(2, &record_ptr->o_id_);

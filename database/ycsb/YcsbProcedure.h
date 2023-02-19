@@ -59,7 +59,7 @@ class YcsbProcedure : public StoredProcedure {
             }
         }
         // sort
-        sort(keys, keys + ycsb_param->Txnlength);
+        // sort(keys, keys + ycsb_param->Txnlength);
         // execute
         for (auto j = 0; j < ycsb_param->Txnlength; ++j) {
             double x = YcsbRandomGenerator::GenerateInteger(1, 100) * 1.0 / 100;

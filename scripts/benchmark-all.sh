@@ -429,13 +429,13 @@ done
 
 result_file=$bin/results/basic
 node_range="4" #"3"
-thread_range="1 5 10"
-remote_range="0" #"0 50 100"
-shared_range="20 40 60 80 100"
+thread_range="5"
+remote_range="30 60 75" #"0 50 100"
+shared_range="0 20 40 60 80 100"
 read_range="0 20 40 60 80 100"
-space_range="0 20 40" #"0 10 20 30 40 50 60 70 80 90 100"
+space_range="0" #"0 10 20 30 40 50 60 70 80 90 100"
 time_range="0" #"0 10 20 30 40 50 60 70 80 90 100"
-op_range="0 1 2"
+op_range="0 1"
 cache_th=0.5
 for remote_ratio in $remote_range
 do

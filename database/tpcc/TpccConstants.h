@@ -103,6 +103,7 @@ const std::string MIDDLE = "OE";
 const int PHONE = 16;
 const int MIN_C_DATA = 300;
 const int MAX_C_DATA = 500;
+const int C_DATA_SIZE = 200;
 const std::string GOOD_CREDIT = "GC";
 const std::string BAD_CREDIT = "BC";
 
