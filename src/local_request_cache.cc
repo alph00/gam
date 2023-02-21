@@ -432,7 +432,7 @@ int Worker::ProcessLocalRLock(WorkRequest* wr) {
         }
 #ifdef MULTITHREAD
     } else {
-        epicAssert(wr->is_cache_hit_);
+        epicAssert(wr->is_cache_hit_ || (wr->flag & TRY_LOCK));
 #ifdef ENABLE_STATISTICS
         if (IsLocal(wr->addr)) {
             no_local_reads_.fetch_add(1, std::memory_order_relaxed);
@@ -607,7 +607,7 @@ int Worker::ProcessLocalWLock(WorkRequest* wr) {
         }
 #ifdef MULTITHREAD
     } else {
-        epicAssert(wr->is_cache_hit_);
+        epicAssert(wr->is_cache_hit_ || (wr->flag & TRY_LOCK));
 
 #ifdef ENABLE_STATISTICS
         if (IsLocal(wr->addr)) {
