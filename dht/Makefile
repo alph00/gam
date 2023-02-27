@@ -1,4 +1,4 @@
-CPP = g++ 
+CPP = g++-7 
 INCLUDE = -I../include -I../lib/libcuckoo/src -I../lib/libcuckoo/cityhash-1.1.1/src 
 LIBS = ../src/libgalloc.a -libverbs -lpthread ../lib/libcuckoo/cityhash-1.1.1/src/.libs/libcityhash.a -lboost_thread -lboost_system
 #LIBS = ../src/libgalloc.a -libverbs -lpthread ../lib/libcuckoo/cityhash-1.1.1/src/.libs/libcityhash.a /users/zhongle/local/lib/libboost_thread.so /users/zhongle/local/lib/libboost_system.so

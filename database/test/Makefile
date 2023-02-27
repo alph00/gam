@@ -1,4 +1,4 @@
-CPP = g++ -std=c++11
+CPP = g++-7 -std=c++11
 GAM_INCLUDE = -I../../include -I../ -I../../lib/libcuckoo/src -I../../lib/libcuckoo/cityhash-1.1.1/src
 DB_INCLUDE = -I.. -I../tpcc -I../bench -I../storage -I../txn -I../utils
 INCLUDE = $(GAM_INCLUDE) $(DB_INCLUDE)

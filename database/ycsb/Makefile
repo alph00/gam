@@ -1,4 +1,4 @@
-CPP = g++ -std=c++11 #-DDEBUG
+CPP = g++-7 -std=c++11 #-DDEBUG
 GAM_INCLUDE = -I../../include -I../ -I../../lib/libcuckoo/src -I../../lib/libcuckoo/cityhash-1.1.1/src
 DB_INCLUDE = -I.. -I../bench -I../storage -I../txn -I../utils -I../content -I../profiler
 INCLUDE = $(GAM_INCLUDE) $(DB_INCLUDE)
