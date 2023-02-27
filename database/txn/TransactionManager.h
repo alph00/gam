@@ -32,7 +32,9 @@ class TransactionManager {
           thread_count_(thread_count),
           thread_id_(thread_id),
           local_epoch_(0),
-          local_ts_(0) {}
+          local_ts_(0),
+          is_first_access_(true),
+          start_timestamp_(0) {}
     ~TransactionManager() {}
 
     bool InsertRecord(TxnContext* context, size_t table_id,
