@@ -275,6 +275,33 @@ int Worker::ProcessLocalSFence(WorkRequest* wr) {
     return SUCCESS;
 }
 
+bool Worker::ProcessLocalTsAdvance(WorkRequest* wr) {
+    epicAssert(wr->addr && wr->local_ts_addr && IsLocal(wr->local_ts_addr) && wr->ptr);
+    epicAssert(wr->size == sizeof(uint64_t));
+    epicAssert(!(wr->flag & ASYNC));
+
+    if (!(wr->flag & FENCE)) {
+        Fence* fence = fences_.at(wr->fd);
+        fence->lock();
+        if (unlikely(IsMFenced(fence, wr))) {
+            AddToFence(fence, wr);
+            epicLog(LOG_DEBUG, "fenced (mfenced = %d, sfenced = %d): %d",
+                    fence->mfenced, fence->sfenced, wr->op);
+            fence->unlock();
+            return FENCE_PENDING;
+        }
+        fence->unlock();
+    }
+
+    wr->id = GetWorkPsn();
+    AddToPending(wr->id, wr);
+    Client* cli = GetClient(wr->addr);
+    epicAssert(cli);
+    cli->FetchAndAdd(ToLocal(wr->local_ts_addr), cli->ToLocal(wr->addr), wr->ts_adder, wr->id, true);
+
+    return SUCCESS;
+}
+
 int Worker::ProcessLocalRequest(WorkRequest* wr) {
     epicLog(LOG_DEBUG,
             "wr->code = %d, wr->flag = %d, wr->addr = %lx, wr->size = %d, "
@@ -287,6 +314,8 @@ int Worker::ProcessLocalRequest(WorkRequest* wr) {
         ret = ProcessLocalFree(wr);
     } else if (READ == wr->op) {
         ret = ProcessLocalRead(wr);
+    } else if (GET_AND_ADVANCE_TS == wr->op) {
+        ret = ProcessLocalTsAdvance(wr);
     } else if (LOCAL_VERSION_CHECK == wr->op) {
         ret = ProcessLocalVersionCheck(wr);
     } else if (WRITE == wr->op) {

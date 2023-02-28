@@ -597,6 +597,10 @@ void Worker::CompletionCheck(unsigned int id) {
             wr = nullptr;
             epicLog(LOG_DEBUG, "finish pending_invalidate");
             break;
+        case GET_AND_ADVANCE_TS:
+            memcpy(wr->ptr, ToLocal(wr->local_ts_addr), wr->size);
+            Notify(wr);
+            break;
         default:
             epicLog(LOG_WARNING,
                     "Unrecognized work request for pending work %d", wr->op);

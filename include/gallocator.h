@@ -77,6 +77,9 @@ class GAlloc {
     int Try_RLock(const GAddr addr, const Size count);
     int Try_WLock(const GAddr addr, const Size count);
 
+    // void AdvanceTs(const GAddr addr, const int adder = 1);
+    void GetAndAdvanceTs(const GAddr remote_addr, const GAddr local_addr, uint64_t* ts, const uint64_t adder = 1);
+
 #ifdef ENABLE_LOCK_TIMESTAMP_CHECK
     int TryRLockWithTsCheck(const GAddr addr, const Size count, uint64_t timestamp);
     int TryWLockWithTsCheck(const GAddr addr, const Size count, uint64_t timestamp);

@@ -249,6 +249,7 @@ class Worker : public Server {
     int ProcessLocalSFence(WorkRequest* wr);
     // bool ProcessLocalVersionCheck(const GAddr base_addr, const Size count, const Size offset, uint64_t version);
     bool ProcessLocalVersionCheck(WorkRequest* wr);
+    bool ProcessLocalTsAdvance(WorkRequest* wr);
     void ProcessRequest(Client* client, WorkRequest* wr);
     void ProcessRemoteMemStat(Client* client, WorkRequest* wr);
     void ProcessRemoteMalloc(Client* client, WorkRequest* wr);

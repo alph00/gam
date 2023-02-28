@@ -134,6 +134,14 @@ void Server::ProcessRdmaRequest(ibv_wc& wc) {
             // epicAssert(n == 1);
             break;
         }
+        case IBV_WC_FETCH_ADD: {
+            epicLog(LOG_DEBUG, "get fetch_add completion event");
+            id = cli->SendComp(wc);
+            // send check initiated locally
+            CompletionCheck(id);
+            // TODO: send out the waiting request
+            break;
+        }
         default:
             epicLog(LOG_WARNING, "unknown opcode received %d\n", wc.opcode);
             break;

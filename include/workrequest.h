@@ -21,6 +21,7 @@
 enum Work {
     MALLOC = 1,
     READ,
+    GET_AND_ADVANCE_TS,
     LOCAL_VERSION_CHECK,
     FETCH_AND_SHARED,
     READ_FORWARD,
@@ -144,6 +145,9 @@ struct WorkRequest {
     Size size;
     int status;
 
+    GAddr local_ts_addr = Gnullptr;
+    uint32_t ts_adder = 1;
+
     Flag flag = 0;
     void* ptr;
 
@@ -249,6 +253,9 @@ struct WorkRequest {
         free = 0;
         size = 0;
         status = 0;
+
+        local_ts_addr = Gnullptr;
+        ts_adder = 1;
 
         flag = 0;
         ptr = 0;

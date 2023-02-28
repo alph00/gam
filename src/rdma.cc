@@ -655,6 +655,12 @@ ssize_t RdmaContext::Rdma(ibv_wr_opcode op, const void* src, size_t len,
         sge_list.lkey = resource->bmr->lkey;
         wr.wr.rdma.remote_addr = (uintptr_t)src;
         wr.wr.rdma.rkey = rkey;
+    } else if (op == IBV_WR_ATOMIC_FETCH_AND_ADD) {
+        sge_list.addr = (uintptr_t)dest;
+        sge_list.lkey = resource->bmr->lkey;
+        wr.wr.atomic.remote_addr = (uintptr_t)src;
+        wr.wr.atomic.rkey = rkey;
+        wr.wr.atomic.compare_add = newval;
     } else {
         epicLog(LOG_WARNING, "unsupported RDMA OP");
         return -1;
@@ -768,6 +774,15 @@ ssize_t RdmaContext::Cas(raddr src, uint64_t oldval, uint64_t newval,
     return ret;
 }
 
+ssize_t RdmaContext::Faa(raddr dest, raddr src, uint64_t adder,
+                        size_t len, unsigned int id, bool signaled) {
+    lock();
+    ssize_t ret = Rdma(IBV_WR_ATOMIC_FETCH_AND_ADD, src, len, id,
+                       signaled, dest, 0, 0, adder);
+    unlock();
+    return ret;
+}
+
 void RdmaContext::ProcessPendingRequests(int n) {
     // process pending rdma requests
     int size = pending_requests.size();
@@ -866,6 +881,32 @@ void RdmaContext::ProcessPendingRequests(int n) {
 
             wrs[j].wr.rdma.remote_addr = (uintptr_t)r.src;
             wrs[j].wr.rdma.rkey = rkey;
+
+            wrs[j].opcode = r.op;
+            wrs[j].wr_id = -1;
+            wrs[j].sg_list = &sls[j];
+            wrs[j].num_sge = r.len == 0 ? 0 : 1;
+            wrs[j].send_flags = 0;
+
+            // update prev_wr
+            prev_wr = &wrs[j];
+            buf_pos = 0;
+
+            pending_msg++;
+        } else if (r.op == IBV_WR_ATOMIC_FETCH_AND_ADD) {
+            j++;
+            if (j == n) {
+                break;
+            }
+            epicAssert(pending_msg < max_pending_msg);
+
+            sls[j].addr = (uintptr_t)r.dest;
+            sls[j].lkey = resource->bmr->lkey;
+            sls[j].length = r.len;
+
+            wrs[j].wr.atomic.remote_addr = (uintptr_t)r.src;
+            wrs[j].wr.atomic.rkey = rkey;
+            wrs[j].wr.atomic.compare_add = r.newval;
 
             wrs[j].opcode = r.op;
             wrs[j].wr_id = -1;

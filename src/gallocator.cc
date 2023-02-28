@@ -359,6 +359,21 @@ void GAlloc::UnLock(const GAddr addr, const Size count) {
     Lock(UNLOCK, addr, count);
 }
 
+void GAlloc::GetAndAdvanceTs(const GAddr remote_addr, const GAddr local_addr, uint64_t* ts, const uint64_t adder) {
+    WorkRequest wr{};
+    wr.op = GET_AND_ADVANCE_TS;
+    wr.addr = remote_addr;
+    wr.size = sizeof(uint64_t);
+    wr.ts_adder = adder;
+    epicAssert(IsLocal(local_addr));
+    wr.local_ts_addr = local_addr;
+    wr.ptr = ts;
+    if (wh->SendRequest(&wr)) {
+        epicLog(LOG_WARNING, "CheckVersion failed");
+    }
+}
+
+
 #ifdef ENABLE_LOCK_TIMESTAMP_CHECK
 int GAlloc::TryRLockWithTsCheck(const GAddr addr, const Size count, uint64_t timestamp) {
     return Lock(RLOCK, addr, count, TRY_LOCK | WITH_TS_CHECK, timestamp);

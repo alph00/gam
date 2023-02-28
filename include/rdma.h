@@ -212,6 +212,9 @@ class RdmaContext {
     ssize_t Cas(raddr src, uint64_t oldval, uint64_t newval,
                 unsigned int id = 0, bool signaled = false);
 
+    ssize_t Faa(raddr dest, raddr src, uint64_t adder,
+                size_t len = 8, unsigned int id = 0, bool signaled = false);
+
     ~RdmaContext();
 };
 

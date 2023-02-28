@@ -71,6 +71,11 @@ class Client {
         return ctx->WriteWithImm(dest, src, len, imm, id, signaled);
     }
 
+    inline size_t FetchAndAdd(raddr dest, raddr src, uint64_t adder, unsigned int id = 0,
+                              bool signaled = false) {
+        return ctx->Faa(dest, src, adder, sizeof(uint64_t), id, signaled);
+    }
+
     inline int PostRecv(int n) { return ctx->PostRecv(n); }
 
     inline char* GetFreeSlot() { return ctx->GetFreeSlot(); }
