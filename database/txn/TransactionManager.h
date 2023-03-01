@@ -35,8 +35,12 @@ class TransactionManager {
           local_ts_(0),
           is_first_access_(true),
           start_timestamp_(0) {
-        local_cache_ts_addr_ = gallocators[thread_id_]->AlignedMalloc(sizeof(uint64_t));
-        epicAssert(gallocators[thread_id_]->IsLocal(local_cache_ts_addr_));
+        if (ts_manager_->NeedToInitLocalCacheTs()) {
+            local_cache_ts_addr_ = gallocators[thread_id_]->AlignedMalloc(sizeof(uint64_t));
+            epicAssert(gallocators[thread_id_]->IsLocal(local_cache_ts_addr_));
+        } else {
+            local_cache_ts_addr_ = Gnullptr;
+        }
     }
     ~TransactionManager() {}
 

@@ -1117,7 +1117,7 @@ void Cache::UnLock(GAddr addr, uint64_t timestamp) {
     try {
         CacheLine* cline = caches.at(block);
         epicAssert(cline->locks.count(addr));
-        epicAssert(cline->locks.at(addr).second.find(timestamp) != cline->locks.at(addr).second.find(timestamp));
+        epicAssert(cline->locks.at(addr).second.find(timestamp) != cline->locks.at(addr).second.end());
         if (cline->locks.at(addr).first == EXCLUSIVE_LOCK_TAG) {  // exclusive lock
             cline->locks.erase(addr);
         } else {

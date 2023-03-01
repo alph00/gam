@@ -11,7 +11,8 @@ class TimestampManager {
     TimestampManager(GAddr epoch_addr, GAddr monotone_ts_addr, bool is_master,
                      GAlloc* epoch_gallocator)
         : epoch_(epoch_addr, is_master, epoch_gallocator),
-          g_timestamp_(monotone_ts_addr) {}
+          g_timestamp_(monotone_ts_addr),
+          is_master_(is_master) {}
     ~TimestampManager() {
         // empty
     }
@@ -32,9 +33,14 @@ class TimestampManager {
         return g_timestamp_.GetGlobalTsAddr();
     }
 
+    bool NeedToInitLocalCacheTs() {
+        return !is_master_;
+    }
+
    private:
     Epoch epoch_;
     GlobalTimestamp g_timestamp_;
+    bool is_master_;
 };  // class TimestampManager
 };  // namespace Database
 
