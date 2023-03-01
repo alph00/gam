@@ -39,9 +39,12 @@ void Directory::ToShared(DirEntry* entry, GAddr addr) {
         }
         entry->state = DIR_SHARED;
     } else {
+        // epicAssert((entry->state == DIR_SHARED && entry->shared.size() > 0) ||
+        //            (entry->state == DIR_UNSHARED && IsBlockLocked(entry) &&
+        //             !IsBlockWLocked(entry)));
+        // NOTE(weihaosun): since we enable InitEntry when mallocing, the entry could exist even there is no locks
         epicAssert((entry->state == DIR_SHARED && entry->shared.size() > 0) ||
-                   (entry->state == DIR_UNSHARED && IsBlockLocked(entry) &&
-                    !IsBlockWLocked(entry)));
+                   (entry->state == DIR_UNSHARED));
         entry->state = DIR_SHARED;
         if (!(entry->shared.size() == 0 ||
               (entry->shared.front() != addr &&
