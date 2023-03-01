@@ -59,6 +59,11 @@ struct CacheLine {
     int ntoshared = 0;
     int ntoinvalid = 0;
 #endif
+
+#ifndef NDEBUG
+    WorkRequest* last_request = nullptr;
+    CacheState old_state = CACHE_INVALID;
+#endif
 };
 
 class Cache {
@@ -214,6 +219,9 @@ class Cache {
     void ToToInvalid(GAddr addr);
     inline void ToToInvalid(CacheLine* cline) {
         epicAssert(cline->state == CACHE_SHARED || cline->state == CACHE_DIRTY);
+#ifndef NDEBUG
+        cline->old_state = cline->state;
+#endif
         cline->state = CACHE_TO_INVALID;
         to_evicted++;
     }
@@ -223,6 +231,9 @@ class Cache {
 #ifndef SELECTIVE_CACHING
         epicAssert(cline->state == CACHE_INVALID);
 #endif
+#ifndef NDEBUG
+        cline->old_state = cline->state;
+#endif
         cline->state = CACHE_TO_SHARED;
     }
 
@@ -231,6 +242,9 @@ class Cache {
 #ifndef SELECTIVE_CACHING
         epicAssert(cline->state == CACHE_INVALID ||
                    cline->state == CACHE_SHARED);
+#endif
+#ifndef NDEBUG
+        cline->old_state = cline->state;
 #endif
         cline->state = CACHE_TO_DIRTY;
     }
@@ -260,14 +274,25 @@ class Cache {
 
     inline bool CanWaitBlockLock(CacheLine* cline, uint64_t timestamp) {
         epicAssert(IsBlockLocked(cline));
+#ifndef NDEBUG
+        uint64_t oldest_timestamp = UINT64_MAX;
+#endif
         for (auto& lock_entry : cline->locks) {
             if (lock_entry.second.first > 0) {
                 uint64_t cur_oldest_timestamp = *(lock_entry.second.second.begin());
                 if (timestamp >= cur_oldest_timestamp) {
                     return false;
                 }
+#ifndef NDEBUG
+                if (oldest_timestamp > cur_oldest_timestamp) {
+                    oldest_timestamp = cur_oldest_timestamp;
+                }
+#endif
             }
         }
+#ifndef NDEBUG
+        epicLog(LOG_WARNING, "can wait block lock, cline addr: %ld, oldest_timestamp: %ld, request_timestamp: %ld.", (uint64_t)(cline->addr), oldest_timestamp, timestamp);
+#endif
         return true;
     }
 

@@ -377,6 +377,10 @@ WorkRequest::WorkRequest(WorkRequest& wr) {
     next = wr.next;
     dup = wr.dup;
 
+#ifndef NDEBUG
+    child = wr.child;
+#endif
+
     is_cache_hit_ = wr.is_cache_hit_;
 #ifdef ENABLE_LOCK_TIMESTAMP_CHECK
     lock_ts = wr.lock_ts;

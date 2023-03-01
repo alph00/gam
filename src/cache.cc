@@ -186,6 +186,9 @@ int Cache::ReadWrite(WorkRequest* wr) {
                         }
                     }
                     lwr->parent = wr;
+#ifndef NDEBUG
+                    wr->child = lwr;
+#endif
                     wr->counter++;
                     // to intermediate state
                     epicAssert(state != CACHE_TO_DIRTY);
@@ -281,6 +284,9 @@ int Cache::ReadWrite(WorkRequest* wr) {
                 }
             }
             lwr->parent = wr;
+#ifndef NDEBUG
+            wr->child = lwr;
+#endif
             wr->counter++;
             // to intermediate state
             if (READ == wr->op) {
@@ -490,6 +496,9 @@ int Cache::Lock(WorkRequest* wr) {
                     }
                 }
                 lwr->parent = wr;
+#ifndef NDEBUG
+                wr->child = lwr;
+#endif
                 wr->counter++;
                 // to intermediate state
                 epicAssert(state != CACHE_TO_DIRTY);
@@ -609,6 +618,9 @@ int Cache::Lock(WorkRequest* wr) {
             }
         }
         lwr->parent = wr;
+#ifndef NDEBUG
+        wr->child = lwr;
+#endif
         wr->counter++;
         // to intermediate state
         if (RLOCK == wr->op) {

@@ -61,6 +61,9 @@ int Worker::ProcessLocalRead(WorkRequest* wr) {
                 lwr->size = BLOCK_SIZE;
                 lwr->ptr = laddr;
                 lwr->parent = wr;
+#ifndef NDEBUG
+                wr->child = lwr;
+#endif
                 wr->counter++;
                 wr->is_cache_hit_ = false;
                 // intermediate state
@@ -211,6 +214,9 @@ int Worker::ProcessLocalWrite(WorkRequest* wr) {
                     }
                 }
                 lwr->parent = wr;
+#ifndef NDEBUG
+                wr->child = lwr;
+#endif
                 lwr->id = GetWorkPsn();
                 lwr->counter = shared.size();
                 wr->counter++;
@@ -337,6 +343,9 @@ int Worker::ProcessLocalRLock(WorkRequest* wr) {
             lwr->size = BLOCK_SIZE;
             lwr->ptr = laddr;
             lwr->parent = wr;
+#ifndef NDEBUG
+            wr->child = lwr;
+#endif
             lwr->flag |= LOCKED;
             wr->counter++;
             // intermediate state
@@ -499,6 +508,9 @@ int Worker::ProcessLocalWLock(WorkRequest* wr) {
             lwr->size = BLOCK_SIZE;
             lwr->ptr = laddr;
             lwr->parent = wr;
+#ifndef NDEBUG
+            wr->child = lwr;
+#endif
             lwr->flag |= LOCKED;
             lwr->id = GetWorkPsn();
             lwr->counter = shared.size();

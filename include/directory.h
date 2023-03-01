@@ -34,6 +34,10 @@ struct DirEntry {
 #else
     unordered_map<ptr_t, int> locks;
 #endif
+
+#ifndef NDEBUG
+    DirState old_state = DIR_UNSHARED;
+#endif
 };
 
 class Directory {
@@ -180,6 +184,9 @@ class Directory {
     DirEntry* ToToDirty(void* ptr, GAddr addr = Gnullptr);
     inline void ToToDirty(DirEntry* entry, GAddr = Gnullptr) {
         epicAssert(entry);
+#ifndef NDEBUG
+        entry->old_state = entry->state;
+#endif
         entry->state = DIR_TO_DIRTY;
     }
     void ToToUnShared(void* ptr);
@@ -195,14 +202,26 @@ class Directory {
 
     inline bool CanWaitBlockLock(DirEntry* entry, uint64_t timestamp) {
         epicAssert(IsBlockLocked(entry));
+#ifndef NDEBUG
+        uint64_t oldest_timestamp = UINT64_MAX;
+#endif
         for (auto& lock_entry : entry->locks) {
             if (lock_entry.second.first > 0) {
                 uint64_t cur_oldest_timestamp = *(lock_entry.second.second.begin());
                 if (timestamp >= cur_oldest_timestamp) {
                     return false;
                 }
+#ifndef NDEBUG
+                if (oldest_timestamp > cur_oldest_timestamp) {
+                    oldest_timestamp = cur_oldest_timestamp;
+                }
+#endif
             }
         }
+
+#ifndef NDEBUG
+        epicLog(LOG_WARNING, "can wait block lock, entry addr: %ld, oldest_timestamp: %ld, request_timestamp: %ld.", (uint64_t)(entry->addr), oldest_timestamp, timestamp);
+#endif
         return true;
     }
     inline int RLock(void* ptr, uint64_t timestamp) { return RLock((ptr_t)ptr, timestamp); }

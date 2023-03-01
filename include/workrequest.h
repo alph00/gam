@@ -168,6 +168,10 @@ struct WorkRequest {
     WorkRequest* next;
     WorkRequest* dup;
 
+#ifndef NDEBUG
+    WorkRequest* child = nullptr;
+#endif
+
     LockWrapper lock_;
 
     bool is_cache_hit_ = true;
@@ -268,6 +272,11 @@ struct WorkRequest {
         parent = nullptr;
         next = nullptr;
         dup = nullptr;
+
+#ifndef NDEBUG
+        child = nullptr;
+#endif
+
 #ifdef GFUNC_SUPPORT
         gfunc = nullptr;
         arg = 0;

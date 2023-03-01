@@ -205,6 +205,11 @@ void Directory::ToToShared(DirEntry* entry, GAddr addr) {
                DIR_DIRTY);  // only transmission from dirty to shared needs this
                             // intermediate state
     epicAssert(entry->shared.size() == 1);
+
+#ifndef NDEBUG
+    entry->old_state = entry->state;
+#endif
+
     entry->state = DIR_TO_SHARED;
 }
 
@@ -224,6 +229,9 @@ void Directory::ToToShared(void* ptr, GAddr addr) {
 
 void Directory::ToToUnShared(DirEntry* entry) {
     epicAssert(entry);
+#ifndef NDEBUG
+    entry->old_state = entry->state;
+#endif
     entry->state = DIR_TO_UNSHARED;
     epicLog(LOG_DEBUG, "change to dir_to_unshared");
 }
