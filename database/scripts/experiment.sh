@@ -9,7 +9,7 @@ set -o nounset
 hosts_file="../tpcc/config.txt"
 # specify your directory for log files
 #output_dir="/data/wentian"
-output_dir="/home/rdmatest/dev/gam-logs"
+output_dir="/home/rdmatest/dev/gam-logs-tpcc"
 
 # working environment
 #proj_dir="~/programs/gam/code"
@@ -76,7 +76,7 @@ vary_temp_locality () {
 
 auto_fill_params () {
   # so that users don't need to specify parameters for themselves
-  USER_ARGS="-p11111 -sf12 -sf1 -c8 -t200000"
+  USER_ARGS="-p11111 -sf20 -sf10 -c10 -t200000"
 }
 
 launch_single_node () {
