@@ -88,6 +88,51 @@ void Worker::ProcessPendingRead(Client* cli, WorkRequest* wr) {
                    wr->size == BLOCK_SIZE);
         epicAssert(RLOCK == parent->op && 1 == parent->counter &&
                    0 == parent->size);
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+        if (wr->flag & WITH_TS_CHECK) {
+            if (wr->flag & CACHED) {  // RLOCK is issued by the cache (remote
+                                    // memory)
+                epicAssert(wr->ptr == cline->line);
+                epicAssert(!IsLocal(wr->addr));
+                int ret = cache.RLock(cline, parent->addr, wr->lock_ts);
+                epicAssert(!ret);            // first rlock must be successful
+            } else if (IsLocal(wr->addr)) {  // RLock is issued by local worker
+                                            // (local memory)
+                epicAssert(ToLocal(wr->addr) == wr->ptr);
+                int ret;
+                if (entry) {
+                    ret = directory.RLock(entry, ToLocal(parent->addr), wr->lock_ts);
+                } else {
+                    ret = directory.RLock(
+                        ToLocal(parent->addr), wr->lock_ts);  // the dir entry may be deleted
+                }
+                epicAssert(!ret);  // first rlock must be successful
+            } else {
+                epicLog(LOG_WARNING, "unexpected!!!");
+            }
+        } else {
+            if (wr->flag & CACHED) {  // RLOCK is issued by the cache (remote
+                                    // memory)
+                epicAssert(wr->ptr == cline->line);
+                epicAssert(!IsLocal(wr->addr));
+                int ret = cache.RLock(cline, parent->addr);
+                epicAssert(!ret);            // first rlock must be successful
+            } else if (IsLocal(wr->addr)) {  // RLock is issued by local worker
+                                            // (local memory)
+                epicAssert(ToLocal(wr->addr) == wr->ptr);
+                int ret;
+                if (entry) {
+                    ret = directory.RLock(entry, ToLocal(parent->addr));
+                } else {
+                    ret = directory.RLock(
+                        ToLocal(parent->addr));  // the dir entry may be deleted
+                }
+                epicAssert(!ret);  // first rlock must be successful
+            } else {
+                epicLog(LOG_WARNING, "unexpected!!!");
+            }
+        }
+#else
         if (wr->flag & CACHED) {  // RLOCK is issued by the cache (remote
                                   // memory)
             epicAssert(wr->ptr == cline->line);
@@ -108,6 +153,7 @@ void Worker::ProcessPendingRead(Client* cli, WorkRequest* wr) {
         } else {
             epicLog(LOG_WARNING, "unexpected!!!");
         }
+#endif
     }
 
     if (wr->flag & CACHED) {
@@ -374,6 +420,82 @@ void Worker::ProcessPendingWrite(Client* cli, WorkRequest* wr) {
         epicLog(LOG_DEBUG, "parent->counter = %d", parent->counter.load());
         if (--parent->counter == 0) {  // write all the blocks
             if (WLOCK == parent->op) {
+#ifdef ENABLE_LOCK_TIMESTAMP_CHECK
+                if (wr->flag & WITH_TS_CHECK) {
+                    if (wr->flag & CACHED) {
+                        epicAssert(!IsLocal(wr->addr));
+                        epicAssert(wr->ptr == cline->line);
+                        if (cache.WLock(cline, parent->addr, wr->lock_ts)) {  // lock failed
+                            epicAssert(
+                                wr->op == WRITE_PERMISSION_ONLY &&
+                                cache.IsRLocked(
+                                    cline, parent->addr));  // must be shared locked
+                                                            // before and now
+                            epicLog(LOG_INFO,
+                                    "cannot lock addr %lx, will try later",
+                                    wr->addr);
+                            AddToServeLocalRequest(wr->addr, parent);
+                        } else {
+                            notify = true;
+                        }
+                    } else if (IsLocal(wr->addr)) {
+                        epicAssert(ToLocal(wr->addr) == wr->ptr);
+                        int ret;
+                        if (entry) {
+                            ret = directory.WLock(entry, ToLocal(parent->addr), wr->lock_ts);
+                        } else {
+                            ret = directory.WLock(ToLocal(parent->addr), wr->lock_ts);
+                        }
+                        if (ret) {  // lock failed
+                            epicLog(LOG_INFO,
+                                    "cannot lock addr %lx, will try later",
+                                    wr->addr);
+                            AddToServeLocalRequest(wr->addr, parent);
+                        } else {
+                            notify = true;
+                        }
+                    } else {
+                        epicLog(LOG_WARNING, "unexpected!!!");
+                    }
+                } else {
+                    if (wr->flag & CACHED) {
+                        epicAssert(!IsLocal(wr->addr));
+                        epicAssert(wr->ptr == cline->line);
+                        if (cache.WLock(cline, parent->addr)) {  // lock failed
+                            epicAssert(
+                                wr->op == WRITE_PERMISSION_ONLY &&
+                                cache.IsRLocked(
+                                    cline, parent->addr));  // must be shared locked
+                                                            // before and now
+                            epicLog(LOG_INFO,
+                                    "cannot lock addr %lx, will try later",
+                                    wr->addr);
+                            AddToServeLocalRequest(wr->addr, parent);
+                        } else {
+                            notify = true;
+                        }
+                    } else if (IsLocal(wr->addr)) {
+                        epicAssert(ToLocal(wr->addr) == wr->ptr);
+                        int ret;
+                        if (entry) {
+                            ret = directory.WLock(entry, ToLocal(parent->addr));
+                        } else {
+                            ret = directory.WLock(ToLocal(parent->addr));
+                        }
+                        if (ret) {  // lock failed
+                            epicLog(LOG_INFO,
+                                    "cannot lock addr %lx, will try later",
+                                    wr->addr);
+                            AddToServeLocalRequest(wr->addr, parent);
+                        } else {
+                            notify = true;
+                        }
+                    } else {
+                        epicLog(LOG_WARNING, "unexpected!!!");
+                    }
+                }
+
+#else
                 if (wr->flag & CACHED) {
                     epicAssert(!IsLocal(wr->addr));
                     epicAssert(wr->ptr == cline->line);
@@ -409,6 +531,7 @@ void Worker::ProcessPendingWrite(Client* cli, WorkRequest* wr) {
                 } else {
                     epicLog(LOG_WARNING, "unexpected!!!");
                 }
+#endif
             } else {
                 notify = true;
             }

@@ -365,7 +365,7 @@ void GAlloc::GetAndAdvanceTs(const GAddr remote_addr, const GAddr local_addr, ui
     wr.addr = remote_addr;
     wr.size = sizeof(uint64_t);
     wr.ts_adder = adder;
-    epicAssert(IsLocal(local_addr));
+    epicAssert((IsLocal(remote_addr) && local_addr == Gnullptr) || IsLocal(local_addr));
     wr.local_ts_addr = local_addr;
     wr.ptr = ts;
     if (wh->SendRequest(&wr)) {
