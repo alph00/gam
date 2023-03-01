@@ -674,6 +674,8 @@ void Worker::ProcessPendingTsAdvance(Client* cli, WorkRequest* wr) {
     epicAssert(parent);
     memcpy(parent->ptr, wr->ptr, wr->size);
     Notify(parent);
+    int ret = ErasePendingWork(wr->id);
+    epicAssert(ret);
     delete wr;
     wr = nullptr;
 }

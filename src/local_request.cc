@@ -303,6 +303,7 @@ int Worker::ProcessLocalTsAdvance(WorkRequest* wr) {
         uint64_t* ts = (uint64_t*)laddr;
         (*ts) += wr->ts_adder;
         directory.unlock(laddr);
+        // *(uint64_t*)(wr->ptr) = __sync_fetch_and_add((uint64_t*)laddr, wr->ts_adder);
     } else {
         // NOTE(weihaosun): should we use Lock or not? Lock is better for Lock Cohorting.
         // do not use lock now

@@ -1003,6 +1003,9 @@ void Worker::ProcessRemoteTsAdvance(Client* client, WorkRequest* wr) {
     (*ts) += wr->ts_adder;
 
     directory.unlock(laddr);
+
+    // *(uint64_t*)(wr->ptr) = __sync_fetch_and_add((uint64_t*)laddr, wr->ts_adder);
+
     delete wr;
     wr = nullptr;
 }
