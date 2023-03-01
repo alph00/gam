@@ -141,7 +141,7 @@ void Worker::ProcessRemoteReadCache(Client* client, WorkRequest* wr) {
             if (wr->flag & TRY_LOCK) {  // reply directly with lock failed
                 epicAssert(wr->flag & LOCKED);
 #ifdef ENABLE_LOCK_TIMESTAMP_CHECK
-                if ((wr->flag & WITH_TS_CHECK) && cache.CanWaitBlockLock(cline, wr->lock_ts)) {
+                if (!deadlock && (wr->flag & WITH_TS_CHECK) && cache.CanWaitBlockLock(cline, wr->lock_ts)) {
                     epicLog(LOG_INFO, "rlock: ts %d waits on addr %lx in node-%d", wr->lock_ts, wr->addr, GetWorkerId());
                     AddToServeRemoteRequest(wr->addr, client, wr);
                     cache.unlock(blk);
@@ -607,7 +607,7 @@ void Worker::ProcessRemoteWriteCache(Client* client, WorkRequest* wr) {
             if (wr->flag & TRY_LOCK) {  // reply directly with lock failed
                 epicAssert(wr->flag & LOCKED);
 #ifdef ENABLE_LOCK_TIMESTAMP_CHECK
-                if ((wr->flag & WITH_TS_CHECK) && cache.CanWaitBlockLock(cline, wr->lock_ts)) {
+                if (!deadlock && (wr->flag & WITH_TS_CHECK) && cache.CanWaitBlockLock(cline, wr->lock_ts)) {
                     epicLog(LOG_INFO, "rlock: ts %d waits on addr %lx in node-%d", wr->lock_ts, wr->addr, GetWorkerId());
                     AddToServeRemoteRequest(wr->addr, client, wr);
                     cache.unlock(to_lock);
