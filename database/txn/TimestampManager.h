@@ -28,6 +28,10 @@ class TimestampManager {
         return g_timestamp_.GetBatchMonotoneTimestamp(gallocator);
     }
 
+    GAddr GetGlobalTsAddr() {
+        return g_timestamp_.GetGlobalTsAddr();
+    }
+
    private:
     Epoch epoch_;
     GlobalTimestamp g_timestamp_;

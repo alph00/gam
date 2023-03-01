@@ -10,14 +10,25 @@ bool TransactionManager::InsertRecord(TxnContext* context, size_t table_id,
 
     if (is_first_access_ == true){
         BEGIN_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
-// #if defined(BATCH_TIMESTAMP)
-//         if (!batch_ts_.IsAvailable()){
-//             batch_ts_.InitTimestamp(GlobalTimestamp::GetBatchMonotoneTimestamp());
-//         }
-//         start_timestamp_ = batch_ts_.GetTimestamp();
-// #else
+#if defined(BATCH_TIMESTAMP)
+        if (!batch_ts_.IsAvailable()){
+#ifdef USE_NOCACHE_TS
+            uint64_t ts_holder = 0;
+            gallocators[thread_id_]->GetAndAdvanceTs(GetGlobalTsAddr(), local_cache_ts_addr_, &ts_holder, kBatchTsNum);
+            batch_ts_.InitTimestamp(ts_holder);
+#else
+            batch_ts_.InitTimestamp(GetMonotoneTimestamp());
+#endif
+        }
+        start_timestamp_ = batch_ts_.GetTimestamp();
+#else
+
+#ifdef USE_NOCACHE_TS
+        gallocators[thread_id_]->GetAndAdvanceTs(GetGlobalTsAddr(), local_cache_ts_addr_, &start_timestamp_, 1);
+#else
         start_timestamp_ = GetMonotoneTimestamp();
-// #endif
+#endif
+#endif
         is_first_access_ = false;
         END_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
     }
@@ -58,14 +69,25 @@ bool TransactionManager::SelectRecordCC(TxnContext* context, size_t table_id,
     BEGIN_PHASE_MEASURE(thread_id_, CC_SELECT);
     if (is_first_access_ == true){
         BEGIN_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
-// #if defined(BATCH_TIMESTAMP)
-//         if (!batch_ts_.IsAvailable()){
-//             batch_ts_.InitTimestamp(GlobalTimestamp::GetBatchMonotoneTimestamp());
-//         }
-//         start_timestamp_ = batch_ts_.GetTimestamp();
-// #else
+#if defined(BATCH_TIMESTAMP)
+        if (!batch_ts_.IsAvailable()){
+#ifdef USE_NOCACHE_TS
+            uint64_t ts_holder = 0;
+            gallocators[thread_id_]->GetAndAdvanceTs(GetGlobalTsAddr(), local_cache_ts_addr_, &ts_holder, kBatchTsNum);
+            batch_ts_.InitTimestamp(ts_holder);
+#else
+            batch_ts_.InitTimestamp(GetMonotoneTimestamp());
+#endif
+        }
+        start_timestamp_ = batch_ts_.GetTimestamp();
+#else
+
+#ifdef USE_NOCACHE_TS
+        gallocators[thread_id_]->GetAndAdvanceTs(GetGlobalTsAddr(), local_cache_ts_addr_, &start_timestamp_, 1);
+#else
         start_timestamp_ = GetMonotoneTimestamp();
-// #endif
+#endif
+#endif
         is_first_access_ = false;
         END_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
     }

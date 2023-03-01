@@ -34,7 +34,10 @@ class TransactionManager {
           local_epoch_(0),
           local_ts_(0),
           is_first_access_(true),
-          start_timestamp_(0) {}
+          start_timestamp_(0) {
+        local_cache_ts_addr_ = gallocators[thread_id_]->AlignedMalloc(sizeof(uint64_t));
+        epicAssert(gallocators[thread_id_]->IsLocal(local_cache_ts_addr_));
+    }
     ~TransactionManager() {}
 
     bool InsertRecord(TxnContext* context, size_t table_id,
@@ -210,6 +213,10 @@ class TransactionManager {
         return ts_manager_->GetMonotoneTimestamp(gallocators[thread_id_]);
     }
 
+    GAddr GetGlobalTsAddr() {
+        return ts_manager_->GetGlobalTsAddr();
+    }
+
    public:
     StorageManager* storage_manager_;
     TimestampManager* ts_manager_;
@@ -221,6 +228,8 @@ class TransactionManager {
     bool is_first_access_;
     uint64_t local_epoch_;
     uint32_t local_ts_;
+
+    GAddr local_cache_ts_addr_;
 
     AccessList<kMaxAccessLimit> access_list_;
 

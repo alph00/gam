@@ -78,6 +78,10 @@ class GlobalTimestamp {
     }
     ///////////////////////
 
+    GAddr GetGlobalTsAddr() {
+        return monotome_ts_addr_;
+    } 
+
    public:
     // static std::atomic<uint64_t> monotone_timestamp_;
     GAddr monotome_ts_addr_;
