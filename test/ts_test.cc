@@ -12,12 +12,12 @@
 #include "worker_handle.h"
 #include "workrequest.h"
 
-#define USE_LOCK
-#define USE_TRY_LOCK
+// #define USE_LOCK
+// #define USE_TRY_LOCK
 
 WorkerHandle *wh1_1, *wh1_2, *wh2_1, *wh2_2, *wh3_1, *wh3_2;
-GAddr local_ts1_1, local_ts1_2, local_ts2_1, local_ts2_2, local_ts3_1, local_ts3_2; 
-GAddr ts;
+GAddr local_ts1_1 = Gnullptr, local_ts1_2 = Gnullptr, local_ts2_1 = Gnullptr, local_ts2_2 = Gnullptr, local_ts3_1 = Gnullptr, local_ts3_2 = Gnullptr; 
+GAddr ts = Gnullptr;
 
 int test_count = 1000;
 
@@ -229,25 +229,25 @@ int main() {
     epicLog(LOG_WARNING, "\n****allocated global_ts %ld at %lx*****\n", sizeof(uint64_t), ts);
 
     // 2.allocate local mem for local ts
-    wr.Reset();
-    wr.op = MALLOC;
-    wr.size = sizeof(uint64_t);
-    wr.flag |= ALIGNED;
-    if (wh1_1->SendRequest(&wr)) {
-        epicLog(LOG_WARNING, "send request failed");
-    }
-    local_ts1_1 = wr.addr;
-    epicLog(LOG_WARNING, "\n****allocated local_ts1_1 %ld at %lx*****\n", sizeof(uint64_t), local_ts1_1);
+    // wr.Reset();
+    // wr.op = MALLOC;
+    // wr.size = sizeof(uint64_t);
+    // wr.flag |= ALIGNED;
+    // if (wh1_1->SendRequest(&wr)) {
+    //     epicLog(LOG_WARNING, "send request failed");
+    // }
+    // local_ts1_1 = wr.addr;
+    // epicLog(LOG_WARNING, "\n****allocated local_ts1_1 %ld at %lx*****\n", sizeof(uint64_t), local_ts1_1);
 
-    wr.Reset();
-    wr.op = MALLOC;
-    wr.size = sizeof(uint64_t);
-    wr.flag |= ALIGNED;
-    if (wh1_2->SendRequest(&wr)) {
-        epicLog(LOG_WARNING, "send request failed");
-    }
-    local_ts1_2 = wr.addr;
-    epicLog(LOG_WARNING, "\n****allocated local_ts1_2 %ld at %lx*****\n", sizeof(uint64_t), local_ts1_2);
+    // wr.Reset();
+    // wr.op = MALLOC;
+    // wr.size = sizeof(uint64_t);
+    // wr.flag |= ALIGNED;
+    // if (wh1_2->SendRequest(&wr)) {
+    //     epicLog(LOG_WARNING, "send request failed");
+    // }
+    // local_ts1_2 = wr.addr;
+    // epicLog(LOG_WARNING, "\n****allocated local_ts1_2 %ld at %lx*****\n", sizeof(uint64_t), local_ts1_2);
 
     wr.Reset();
     wr.op = MALLOC;
@@ -317,7 +317,8 @@ int main() {
     if (wh1_1->SendRequest(&wr)) {
         epicLog(LOG_WARNING, "GetAndAdvanceTs failed");
     }
-    if (now_ts == 6 * test_count + 1) {
+    epicLog(LOG_WARNING, "now ts is %ld", now_ts);
+    if (now_ts == 6 * test_count) {
         epicLog(LOG_WARNING, "atomic test succeeded");
     } else {
         epicLog(LOG_WARNING, "atomic test failed");

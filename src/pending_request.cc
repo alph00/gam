@@ -669,6 +669,15 @@ void Worker::ProcessPendingInvalidateForward(Client* cli, WorkRequest* wr) {
     }
 }
 
+void Worker::ProcessPendingTsAdvance(Client* cli, WorkRequest* wr) {
+    WorkRequest* parent = wr->parent;
+    epicAssert(parent);
+    memcpy(parent->ptr, wr->ptr, wr->size);
+    Notify(parent);
+    delete wr;
+    wr = nullptr;
+}
+
 void Worker::ProcessPendingRequest(Client* cli, WorkRequest* wr) {
     epicLog(LOG_DEBUG, "process pending request %d from worker %d", wr->op,
             cli->GetWorkerId());
@@ -700,6 +709,10 @@ void Worker::ProcessPendingRequest(Client* cli, WorkRequest* wr) {
         }
         case INVALIDATE_FORWARD: {
             ProcessPendingInvalidateForward(cli, wr);
+            break;
+        }
+        case GET_AND_ADVANCE_TS: {
+            ProcessPendingTsAdvance(cli, wr);
             break;
         }
         default:

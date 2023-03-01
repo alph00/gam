@@ -63,3 +63,4 @@ scripts/log.Lab505-227
 test/perf.data.cache
 scripts/results/basic_nocache
 test/atomic_test
+test/ts_test

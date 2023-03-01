@@ -329,6 +329,10 @@ void Worker::ProcessRequest(Client* client, WorkRequest* wr) {
             break;
 #endif
 #endif
+        case GET_AND_ADVANCE_TS: {
+            ProcessRemoteTsAdvance(client, wr);
+            break;
+        }
         default:
             epicLog(LOG_WARNING, "unrecognized request from %d",
                     client->GetWorkerId());

@@ -249,7 +249,7 @@ class Worker : public Server {
     int ProcessLocalSFence(WorkRequest* wr);
     // bool ProcessLocalVersionCheck(const GAddr base_addr, const Size count, const Size offset, uint64_t version);
     bool ProcessLocalVersionCheck(WorkRequest* wr);
-    bool ProcessLocalTsAdvance(WorkRequest* wr);
+    int ProcessLocalTsAdvance(WorkRequest* wr);
     void ProcessRequest(Client* client, WorkRequest* wr);
     void ProcessRemoteMemStat(Client* client, WorkRequest* wr);
     void ProcessRemoteMalloc(Client* client, WorkRequest* wr);
@@ -263,6 +263,7 @@ class Worker : public Server {
     void ProcessRemoteWriteReply(Client* client, WorkRequest* wr);
     void ProcessRemoteEvictShared(Client* client, WorkRequest* wr);
     void ProcessRemoteEvictDirty(Client* client, WorkRequest* wr);
+    void ProcessRemoteTsAdvance(Client* client, WorkRequest* wr);
     void ProcessRequest(Client* client, unsigned int work_id);
     void ProcessPendingRequest(Client* cli, WorkRequest* wr);
     void ProcessPendingRead(Client* cli, WorkRequest* wr);
@@ -271,6 +272,7 @@ class Worker : public Server {
     void ProcessPendingWriteForward(Client* cli, WorkRequest* wr);
     void ProcessPendingEvictDirty(Client* cli, WorkRequest* wr);
     void ProcessPendingInvalidateForward(Client* cli, WorkRequest* wr);
+    void ProcessPendingTsAdvance(Client* cli, WorkRequest* wr);
     void ProcessToServeRequest(WorkRequest* wr);
 
 #ifdef DHT

@@ -275,9 +275,11 @@ int Worker::ProcessLocalSFence(WorkRequest* wr) {
     return SUCCESS;
 }
 
-bool Worker::ProcessLocalTsAdvance(WorkRequest* wr) {
-    epicAssert(wr->addr && wr->local_ts_addr && IsLocal(wr->local_ts_addr) && wr->ptr);
+int Worker::ProcessLocalTsAdvance(WorkRequest* wr) {
+    // epicAssert(wr->addr && wr->local_ts_addr && IsLocal(wr->local_ts_addr) && wr->ptr);
+    epicAssert(wr->addr && BLOCK_ALIGNED(wr->addr));
     epicAssert(wr->size == sizeof(uint64_t));
+    epicAssert(wr->ts_adder);
     epicAssert(!(wr->flag & ASYNC));
 
     if (!(wr->flag & FENCE)) {
@@ -293,12 +295,48 @@ bool Worker::ProcessLocalTsAdvance(WorkRequest* wr) {
         fence->unlock();
     }
 
-    wr->id = GetWorkPsn();
-    AddToPending(wr->id, wr);
-    Client* cli = GetClient(wr->addr);
-    epicAssert(cli);
-    cli->FetchAndAdd(ToLocal(wr->local_ts_addr), cli->ToLocal(wr->addr), wr->ts_adder, wr->id, true);
+    if (IsLocal(wr->addr)) {
+        epicAssert(wr->local_ts_addr == Gnullptr);
+        void* laddr = ToLocal(wr->addr);
+        directory.lock(laddr);
+        memcpy(wr->ptr, laddr, wr->size);
+        uint64_t* ts = (uint64_t*)laddr;
+        (*ts) += wr->ts_adder;
+        directory.unlock(laddr);
+    } else {
+        // NOTE(weihaosun): should we use Lock or not? Lock is better for Lock Cohorting.
+        // do not use lock now
+        Client* cli = GetClient(wr->addr);
+        epicAssert(cli);
+        WorkRequest* lwr = new WorkRequest(*wr);
+        lwr->ptr = ToLocal(wr->local_ts_addr);
+        lwr->parent = wr;
+        SubmitRequest(cli, lwr, ADD_TO_PENDING | REQUEST_SEND);
+        return REMOTE_REQUEST;
+    }
 
+    // wr->id = GetWorkPsn();
+    // AddToPending(wr->id, wr);
+    // Client* cli = GetClient(wr->addr);
+    // epicAssert(cli);
+    // cli->FetchAndAdd(ToLocal(wr->local_ts_addr), cli->ToLocal(wr->addr), wr->ts_adder, wr->id, true);
+
+#ifdef MULTITHREAD
+    if (wr->flag & TO_SERVE || wr->flag & FENCE) {
+#endif
+        /*
+         * notify the app thread directly
+         * this can only happen when the request can be fulfilled locally
+         * or we don't need to wait for reply from remote node
+         */
+        if (Notify(wr)) {
+            epicLog(LOG_WARNING, "cannot wake up the app thread");
+        }
+#ifdef MULTITHREAD
+    } else {
+
+    }
+#endif
     return SUCCESS;
 }
 

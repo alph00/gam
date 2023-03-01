@@ -988,3 +988,21 @@ void Worker::ProcessRemoteWriteReply(Client* client, WorkRequest* wr) {
     delete wr;
     wr = nullptr;
 }
+
+
+void Worker::ProcessRemoteTsAdvance(Client* client, WorkRequest* wr) {
+    epicAssert(wr->addr && IsLocal(wr->addr));
+    epicAssert(wr->ptr && wr->size == sizeof(uint64_t));
+    epicAssert(wr->ts_adder);
+
+    void* laddr = ToLocal(wr->addr);
+    directory.lock(laddr);
+
+    client->WriteWithImm(wr->ptr, laddr, wr->size, wr->id);
+    uint64_t* ts = (uint64_t*)laddr;
+    (*ts) += wr->ts_adder;
+
+    directory.unlock(laddr);
+    delete wr;
+    wr = nullptr;
+}

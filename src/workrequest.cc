@@ -162,6 +162,10 @@ int WorkRequest::Ser(char* buf, int& len) {
             len = appendInteger(buf, lop, id, wid, addr, ptr);
             break;
 
+        case GET_AND_ADVANCE_TS:
+            len = appendInteger(buf, lop, id, wid, addr, size, ptr, ts_adder);
+            break;
+
         default:
             epicLog(LOG_WARNING, "unrecognized op code");
             break;
@@ -326,6 +330,10 @@ int WorkRequest::Deser(const char* buf, int& len) {
             p += readInteger(p, id, wid, addr, ptr);
             break;
 
+        case GET_AND_ADVANCE_TS:
+            p += readInteger(p, id, wid, addr, size, ptr, ts_adder);
+            break;
+
         default:
             epicLog(LOG_WARNING, "unrecognized op code %d", op);
             break;
@@ -349,6 +357,9 @@ WorkRequest::WorkRequest(WorkRequest& wr) {
     free = wr.free;
     size = wr.size;
     status = wr.status;
+
+    local_ts_addr = wr.local_ts_addr;
+    ts_adder = wr.ts_adder;
 
     flag = wr.flag;
     ptr = wr.ptr;
