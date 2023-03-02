@@ -240,6 +240,7 @@ class TransactionManager {
 #if defined(SILO)
     // write set.
     AccessPtrList<kMaxAccessLimit> write_list_;
+    uint64_t cur_tid_ = 0;
 #endif
 };
 }  // namespace Database

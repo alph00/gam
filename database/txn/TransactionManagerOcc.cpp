@@ -116,6 +116,10 @@ bool TransactionManager::CommitTransaction(TxnContext *context, TxnParam *param,
     // step 2: if success, then overwrite and commit
     if (is_success == true) {
         BEGIN_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
+#ifdef USE_NOCACHE_TS
+        uint64_t commit_ts = 0;
+        gallocators[thread_id_]->GetAndAdvanceTs(GetGlobalTsAddr(), local_cache_ts_addr_, &commit_ts, 1);
+#else
         uint64_t curr_epoch = GetEpoch();
 
 #if defined(SCALABLE_TIMESTAMP)
@@ -131,6 +135,8 @@ bool TransactionManager::CommitTransaction(TxnContext *context, TxnParam *param,
         uint64_t commit_ts =
             GenerateMonotoneTimestamp(curr_epoch, GetMonotoneTimestamp());
 #endif
+#endif
+
         END_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
 
         for (size_t i = 0; i < access_list_.access_count_; ++i) {

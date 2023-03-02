@@ -10,7 +10,7 @@ using namespace std;
 
 // #define NDEBUG
 
-#define ENABLE_LOCK_TIMESTAMP_CHECK
+// #define ENABLE_LOCK_TIMESTAMP_CHECK
 
 #define USE_LOCAL_VERSION_CHECK
 

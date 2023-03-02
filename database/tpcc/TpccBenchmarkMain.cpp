@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
     storage_manager.Deserialize(storage_addr, default_gallocator);
 
     GAddr epoch_addr = Gnullptr;
-#if defined(OCC) || defined(SILO)
+#if defined(OCC) || (defined(SILO) && !defined(USE_DECENTRALIZED_TID))
     epoch_addr = initiator.InitEpoch();
     // synchronizer.MasterBroadcast<GAddr>(&epoch_addr,
     // Database::SyncType::EPOCH);

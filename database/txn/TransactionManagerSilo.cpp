@@ -120,24 +120,46 @@ bool TransactionManager::CommitTransaction(TxnContext *context, TxnParam *param,
         }
     }
 
-#if defined(SCALABLE_TIMESTAMP)
-    uint64_t max_rw_ts = 0;
-    for (size_t i = 0; i < access_list_.access_count_; ++i) {
-        Access *access_ptr = access_list_.GetAccess(i);
-        if (access_ptr->timestamp_ > max_rw_ts) {
-            max_rw_ts = access_ptr->timestamp_;
-        }
-    }
-#endif
-
     // step 3: if success, then overwrite and commit
     if (is_success == true) {
+// #if defined(SCALABLE_TIMESTAMP)
+//     uint64_t max_rw_ts = 0;
+//     for (size_t i = 0; i < access_list_.access_count_; ++i) {
+//         Access *access_ptr = access_list_.GetAccess(i);
+//         if (access_ptr->timestamp_ > max_rw_ts) {
+//             max_rw_ts = access_ptr->timestamp_;
+//         }
+//     }
+// #endif
         BEGIN_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
+#ifdef USE_DECENTRALIZED_TID
+        uint64_t max_tid = 0;
+        for (size_t i = 0; i < access_list_.access_count_; ++i) {
+            Access *access_ptr = access_list_.GetAccess(i);
+            if (access_ptr->timestamp_ > max_tid) {
+                max_tid = access_ptr->timestamp_;
+            }
+        }
+        if (max_tid > cur_tid_) {
+            cur_tid_ = max_tid + 1;
+        } else {
+            cur_tid_ ++;
+        }
+        uint64_t commit_ts = cur_tid_;
+#else
 #if defined(SCALABLE_TIMESTAMP)
+        uint64_t max_rw_ts = 0;
+        for (size_t i = 0; i < access_list_.access_count_; ++i) {
+            Access *access_ptr = access_list_.GetAccess(i);
+            if (access_ptr->timestamp_ > max_rw_ts) {
+                max_rw_ts = access_ptr->timestamp_;
+            }
+        }
         uint64_t commit_ts = GenerateScalableTimestamp(curr_epoch, max_rw_ts);
 #else
         uint64_t commit_ts =
             GenerateMonotoneTimestamp(curr_epoch, GetMonotoneTimestamp());
+#endif
 #endif
         END_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
 
