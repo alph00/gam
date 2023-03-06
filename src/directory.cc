@@ -94,12 +94,13 @@ void Directory::Remove(DirEntry*& entry, int wid) {
         }
     }
     epicAssert(found);
-    // if (entry->shared.size() == 0 && !IsBlockLocked(entry)) {
-    //     int ret = dir.erase(entry->addr);
-    //     epicAssert(ret);
-    //     delete entry;
-    //     entry = nullptr;
-    // }
+    if (entry->shared.size() == 0 && !IsBlockLocked(entry)) {
+        // int ret = dir.erase(entry->addr);
+        // epicAssert(ret);
+        // delete entry;
+        // entry = nullptr;
+        entry->state = DIR_UNSHARED;
+    }
 }
 
 void Directory::Remove(void* ptr, int wid) {
@@ -145,6 +146,8 @@ void Directory::ToUnShared(DirEntry*& entry) {
         // }
         // delete entry;
         // entry = nullptr;
+        entry->state = DIR_UNSHARED;
+        entry->shared.clear();
     }
 }
 
@@ -698,9 +701,9 @@ void Directory::UnLock(DirEntry*& entry, ptr_t ptr) {
         entry->locks.erase(ptr);
     }
     // if (entry->state == DIR_UNSHARED && entry->locks.size() == 0) {
-    //     dir.erase(entry->addr);
-    //     delete entry;
-    //     entry = nullptr;
+        // dir.erase(entry->addr);
+        // delete entry;
+        // entry = nullptr;
     // }
 }
 
@@ -744,6 +747,7 @@ void Directory::Clear(DirEntry*& entry, GAddr addr) {
             // dir.erase(entry->addr);
             // delete entry;
             // entry = nullptr;
+            entry->state = DIR_UNSHARED;
         } else {
             entry->state = DIR_UNSHARED;
         }
