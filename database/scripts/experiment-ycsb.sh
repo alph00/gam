@@ -70,19 +70,28 @@ vary_get_ratio () {
 
 
 vary_overall () {
-  get_ratios=(0.8 0.5 0.2) 
-  put_ratios=(0 0 0)
-  update_ratios=(0.2 0.5 0.8)
-  get_ratio_strs=(8 5 2) 
-  put_ratio_strs=(0 0 0)
-  update_ratio_strs=(2 5 8)
+  # get_ratios=(0.8 0.5 0.2) 
+  # put_ratios=(0 0 0)
+  # update_ratios=(0.2 0.5 0.8)
+  # get_ratio_strs=(8 5 2) 
+  # put_ratio_strs=(0 0 0)
+  # update_ratio_strs=(2 5 8)
+
+  get_ratios=(0.5 0.2) 
+  put_ratios=(0 0)
+  update_ratios=(0.5 0.8)
+  get_ratio_strs=(5 2) 
+  put_ratio_strs=(0 0)
+  update_ratio_strs=(5 8)
 
   let end=${#get_ratios[*]}-1
   for c in $(seq 0 ${end})
   do
-    theta_ratios=(0.5 0.7 0.9 0.99)
+    # theta_ratios=(0.5 0.7 0.9 0.99)
+    theta_ratios=(0.5 0.7)
     for theta_ratio in ${theta_ratios[@]}; do
-        core_cnts=(1 5 10 15 20)
+        # core_cnts=(1 5 10 15 20)
+        core_cnts=(5)
         for core_cnt in ${core_cnts[@]}; do
             launch_overall ${theta_ratio} ${core_cnt} ${get_ratios[c]} ${put_ratios[c]} ${update_ratios[c]} ${get_ratio_strs[c]} ${put_ratio_strs[c]} ${update_ratio_strs[c]} 
         done    
@@ -119,7 +128,7 @@ launch_overall () {
 
 auto_fill_params () {
   # so that users don't need to specify parameters for themselves
-  USER_ARGS="-p11111 -sf12 -sf1 -c4 -t200000 -d0" #in ycsb -sf and -d don't work
+  USER_ARGS="-p11111 -sf12 -sf1 -t200000 -d0" #in ycsb -sf and -d don't work
 }
 
 auto_fill_params
