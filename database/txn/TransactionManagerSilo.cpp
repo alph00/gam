@@ -75,9 +75,11 @@ bool TransactionManager::CommitTransaction(TxnContext *context, TxnParam *param,
     }
     // should also update readers' timestamps.
 
+#ifndef USE_DECENTRALIZED_TID
     BEGIN_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
     uint64_t curr_epoch = GetEpoch();
     END_CC_TS_ALLOC_TIME_MEASURE(thread_id_);
+#endif
 
     // setp 2: validate read.
     bool is_success = true;

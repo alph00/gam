@@ -98,10 +98,17 @@ class Directory {
 #endif
 
     DirEntry* GetEntry(ptr_t ptr) {
-        if (dir.count(TOBLOCK(ptr))) {
-            return dir.at(TOBLOCK(ptr));
+        ptr_t block = TOBLOCK(ptr);
+        if (dir.count(block)) {
+            return dir.at(block);
         } else {
-            return nullptr;
+            DirEntry* entry = new DirEntry();
+            entry->state = DIR_UNSHARED;
+            // entry->shared.push_back(addr);
+            entry->addr = block;
+            dir[block] = entry;
+            return entry;
+            // return nullptr;
         }
     }
 

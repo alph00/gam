@@ -28,7 +28,7 @@ class Epoch {
           ts_thread_(NULL),
           is_master_(is_master),
           epoch_gallocator_(epoch_gallocator_) {
-#if defined(OCC) || defined(SILO)
+#if defined(OCC) || (defined(SILO) && !defined(USE_DECENTRALIZED_TID))
         if (is_master) {
             ts_thread_ = new boost::thread(boost::bind(&Epoch::Start, this));
         }

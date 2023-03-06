@@ -94,12 +94,12 @@ void Directory::Remove(DirEntry*& entry, int wid) {
         }
     }
     epicAssert(found);
-    if (entry->shared.size() == 0 && !IsBlockLocked(entry)) {
-        int ret = dir.erase(entry->addr);
-        epicAssert(ret);
-        delete entry;
-        entry = nullptr;
-    }
+    // if (entry->shared.size() == 0 && !IsBlockLocked(entry)) {
+    //     int ret = dir.erase(entry->addr);
+    //     epicAssert(ret);
+    //     delete entry;
+    //     entry = nullptr;
+    // }
 }
 
 void Directory::Remove(void* ptr, int wid) {
@@ -140,11 +140,11 @@ void Directory::ToUnShared(DirEntry*& entry) {
         entry->shared.clear();
         epicLog(LOG_DEBUG, "dir is locked, just change it to dir_unshared");
     } else {
-        if (!dir.erase(entry->addr)) {
-            epicLog(LOG_WARNING, "cannot unshared the directory entry");
-        }
-        delete entry;
-        entry = nullptr;
+        // if (!dir.erase(entry->addr)) {
+        //     epicLog(LOG_WARNING, "cannot unshared the directory entry");
+        // }
+        // delete entry;
+        // entry = nullptr;
     }
 }
 
@@ -697,11 +697,11 @@ void Directory::UnLock(DirEntry*& entry, ptr_t ptr) {
     if (entry->locks[ptr] == 0) {
         entry->locks.erase(ptr);
     }
-    if (entry->state == DIR_UNSHARED && entry->locks.size() == 0) {
-        dir.erase(entry->addr);
-        delete entry;
-        entry = nullptr;
-    }
+    // if (entry->state == DIR_UNSHARED && entry->locks.size() == 0) {
+    //     dir.erase(entry->addr);
+    //     delete entry;
+    //     entry = nullptr;
+    // }
 }
 
 void Directory::UnLock(ptr_t ptr) {
@@ -741,9 +741,9 @@ void Directory::Clear(DirEntry*& entry, GAddr addr) {
     }
     if (entry->shared.size() == 0) {
         if (!IsBlockLocked(entry)) {
-            dir.erase(entry->addr);
-            delete entry;
-            entry = nullptr;
+            // dir.erase(entry->addr);
+            // delete entry;
+            // entry = nullptr;
         } else {
             entry->state = DIR_UNSHARED;
         }

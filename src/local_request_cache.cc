@@ -832,8 +832,18 @@ bool Worker::ProcessLocalVersionCheck(WorkRequest* wr) {
             void* laddr = ToLocal(i);
             directory.lock(laddr);
             DirEntry* entry = directory.GetEntry(laddr);
+            // epicAssert(entry);
+            DirState state = directory.GetState(entry);
+            if (directory.InTransitionState(state)) {
+                epicLog(LOG_INFO,
+                        "directory cache in transition state when local version check %d", entry->cache_state);
+                AddToServeLocalRequest(i, wr);
+                directory.unlock(laddr);
+                // wr->unlock();
+                return IN_TRANSITION;
+            }
             // check state and lock
-            if (entry && (directory.InTransitionState(entry) || entry->state == DIR_DIRTY || directory.IsWLocked(entry, laddr))) {
+            if (entry && (entry->state == DIR_DIRTY || directory.IsWLocked(entry, laddr))) {
                 *(wr->version_check_status) = VERSION_CHECK_FAILED;
                 directory.unlock(laddr);
                 break;
@@ -855,8 +865,16 @@ bool Worker::ProcessLocalVersionCheck(WorkRequest* wr) {
             GAddr nextb = BADD(i, 1);
             cache.lock(i);
             CacheLine* cline = cache.GetCLine(i);
+            if (cache.InTransitionState(cline)) {
+                epicLog(LOG_INFO,
+                        "cache in transition state when local version check %d", cline->state);
+                AddToServeLocalRequest(i, wr);
+                cache.unlock(i);
+                // wr->unlock();
+                return IN_TRANSITION;
+            }
             // check state and lock
-            if (!cline || cache.InTransitionState(cline) || cache.IsWLocked(i)) {
+            if (!cline || cache.IsWLocked(i) || cline->state == CACHE_INVALID) {
                 *(wr->version_check_status) = VERSION_CHECK_FAILED;
                 cache.unlock(i);
                 break;
