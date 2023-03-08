@@ -14,7 +14,6 @@
 #include "YcsbSource.h"
 #include "ycsb/zipf.h"
 
-
 using namespace Database::YcsbBenchmark;
 using namespace Database;
 
@@ -75,7 +74,8 @@ int main(int argc, char *argv[]) {
     IORedirector redirector(gThreadCount);
     size_t access_pattern = 0;
     YcsbSource sourcer(&redirector, num_txn, SourceType::PARTITION_SOURCE,
-                       gThreadCount, dist_ratio, config.GetMyPartitionId());
+                       gThreadCount, dist_ratio, config.GetMyPartitionId(),
+                       &storage_manager);
     // TpccSource sourcer(&tpcc_scale_params, &redirector, num_txn,
     // SourceType::RANDOM_SOURCE, gThreadCount, dist_ratio);
     sourcer.Start();

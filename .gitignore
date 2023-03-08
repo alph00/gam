@@ -40,6 +40,11 @@ compile_commands.json
 
 # ycsbsh
 experiment-ycsb-qfs.sh
+qfs-kill.sh
+
+# tpccsh
+experiment-qfs.sh
+make_scp.sh
 
 test/lock_test
 database/tpcc/tpcc
