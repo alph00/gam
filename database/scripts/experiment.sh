@@ -76,7 +76,7 @@ vary_temp_locality () {
 
 auto_fill_params () {
   # so that users don't need to specify parameters for themselves
-  USER_ARGS="-p11111 -sf20 -sf10 -c10 -t200000"
+  USER_ARGS="-p11111 -sf20 -sf1000 -c5 -t200000"
 }
 
 launch_single_node () {
