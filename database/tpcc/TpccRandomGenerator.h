@@ -49,6 +49,19 @@ class TpccRandomGenerator {
         return number;
     }
 
+    // generate integer that falls inside [min, max] but not equal to excluding.
+    static int GenerateIntegerExcludingRange(const int &min, const int &max,
+                                             const int &excluding_min, const int &excluding_max) {
+        int number = GenerateInteger(min, max);
+        while (number >= excluding_min && number <= excluding_max) {
+            number = GenerateInteger(min, max);
+        }
+        // if (number >= excluding) {
+        //     number += 1;
+        // }
+        return number;
+    }
+
     static double GenerateFixedPoint(const int &decimal_places,
                                      const double &minimum,
                                      const double &maximum) {

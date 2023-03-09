@@ -224,9 +224,11 @@ class TpccSource : public BenchmarkSource {
             bool remote = (TpccRandomGenerator::GenerateInteger(1, 100) <=
                            (int)dist_ratio_);
             if (scale_params_->num_warehouses_ > 1 && remote) {
-                param->i_w_ids_[i] =
-                    TpccRandomGenerator::GenerateIntegerExcluding(
-                        1, scale_params_->num_warehouses_, param->w_id_);
+                // param->i_w_ids_[i] =
+                //     TpccRandomGenerator::GenerateIntegerExcluding(
+                //         1, scale_params_->num_warehouses_, param->w_id_);
+                param->i_w_ids_[i] = TpccRandomGenerator::GenerateIntegerExcludingRange(1, scale_params_->num_warehouses_,
+                                                    scale_params_->starting_warehouse_, scale_params_->ending_warehouse_);
             } else {
                 param->i_w_ids_[i] = param->w_id_;
             }
@@ -406,8 +408,10 @@ class TpccSource : public BenchmarkSource {
         // 15%(by standard): paying through another warehouse
         else {
             // select in range [1, num_warehouses] excluding w_id
-            param->c_w_id_ = TpccRandomGenerator::GenerateIntegerExcluding(
-                1, scale_params_->num_warehouses_, param->w_id_);
+            // param->c_w_id_ = TpccRandomGenerator::GenerateIntegerExcluding(
+            //     1, scale_params_->num_warehouses_, param->w_id_);
+            param->c_w_id_ = TpccRandomGenerator::GenerateIntegerExcludingRange(1, scale_params_->num_warehouses_,
+                                                                                scale_params_->starting_warehouse_, scale_params_->ending_warehouse_);
             param->c_d_id_ = TpccRandomGenerator::GenerateDistrictId(
                 scale_params_->num_districts_per_warehouse_);
         }
