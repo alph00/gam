@@ -6,8 +6,10 @@
 // #include "Record.h"
 #include "HashIndex.h"
 #include "Meta.h"
+#include "Record.h"
 #include "RecordSchema.h"
 #include "TableRecord.h"
+#include "gallocator.h"
 // #include "Profiler.h"
 
 namespace Database {
@@ -94,6 +96,12 @@ class Table : public GAMObject {
         ret += RecordSchema::GetSerializeSize();
         ret += HashIndex::GetSerializeSize();
         return ret;
+    }
+
+    void SaveCheckpoint(std::ofstream& out_stream, GAlloc* gallocator) {
+        size_t record_size = schema_ptr_->GetSchemaSize();
+        primary_index_->SaveCheckpoint(out_stream, record_size, gallocator,
+                                       schema_ptr_);
     }
 
    private:

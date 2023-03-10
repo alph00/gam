@@ -67,6 +67,7 @@ class Record : public GAMObject {
     }
 
     size_t GetSerializeSize() const { return schema_ptr_->GetSchemaSize(); }
+    char *GetDataPtr() { return data_ptr_; }
 
    private:
     Record(const Record &);

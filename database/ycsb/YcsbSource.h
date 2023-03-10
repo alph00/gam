@@ -7,8 +7,10 @@
 #include <cstdlib>
 #include <ctime>
 #include <ios>
+#include <string>
 #include <utility>
 
+#include "BenchmarkArguments.h"
 #include "BenchmarkSource.h"
 #include "Record.h"
 #include "RecordSchema.h"
@@ -25,9 +27,10 @@ class YcsbSource : public BenchmarkSource {
    public:
     YcsbSource(IORedirector *redirector, size_t num_txn, size_t source_type,
                size_t thread_count, size_t dist_ratio = 0, size_t node_id = 0,
-               StorageManager *storage_manager = nullptr)
+               StorageManager *storage_manager = nullptr,
+               std::string &source_filename = txn_data_filename)
         : BenchmarkSource(redirector, num_txn, source_type, thread_count,
-                          dist_ratio) {
+                          dist_ratio, source_filename) {
         node_id_ = node_id;
         storage_manager_ = storage_manager;
     }
@@ -51,11 +54,13 @@ class YcsbSource : public BenchmarkSource {
                 param = GenerateYcsbParam();
                 tuples->push_back(param);
                 if ((i + 1) % gParamBatchSize == 0) {
+                    DumpToDisk(tuples);
                     redirector_ptr_->PushParameterBatch(tuples);
                     tuples = new ParamBatch(gParamBatchSize);
                 }
             }
             if (tuples->size() != 0) {
+                DumpToDisk(tuples);
                 redirector_ptr_->PushParameterBatch(tuples);
             }
         } else if (source_type_ == PARTITION_SOURCE) {
@@ -66,11 +71,13 @@ class YcsbSource : public BenchmarkSource {
                 param = GenerateYcsbParam();
                 tuples->push_back(param);
                 if ((i + 1) % gParamBatchSize == 0) {
+                    DumpToDisk(tuples);
                     redirector_ptr_->PushParameterBatch(tuples);
                     tuples = new ParamBatch(gParamBatchSize);
                 }
             }
             if (tuples->size() != 0) {
+                DumpToDisk(tuples);
                 redirector_ptr_->PushParameterBatch(tuples);
             }
         }
@@ -112,11 +119,11 @@ class YcsbSource : public BenchmarkSource {
         // sort(keys, keys + ycsb_param->Txnlength);
         for (auto j = 0; j < param->Txnlength; ++j) {
             double x = YcsbRandomGenerator::GenerateInteger(1, 100) * 1.0 / 100;
-            if (x < param->getratio) {  // get
+            if (x < ycsb_get_ratio) {  // get
                 param->op[j].type = YcsbGet;
                 param->op[j].key = keys[j];
-            } else if (x >= param->getratio &&
-                       x <= param->getratio + param->updateratio) {  // update
+            } else if (x >= ycsb_get_ratio &&
+                       x <= ycsb_get_ratio + ycsb_update_ratio) {  // update
                 param->op[j].type = YcsbUpdate;
                 param->op[j].key = keys[j];
                 // wq

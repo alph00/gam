@@ -1,15 +1,21 @@
 #ifndef __DATABASE_STORAGE_STORAGE_MANAGER_H__
 #define __DATABASE_STORAGE_STORAGE_MANAGER_H__
 
+#include <cassert>
 #include <iostream>
+#include <string>
 #include <vector>
 
+#include "BenchmarkArguments.h"
+#include "ClusterConfig.h"
 #include "Table.h"
+#include "gallocator.h"
 
 namespace Database {
 class StorageManager : public GAMObject {
    public:
-    StorageManager() {
+    StorageManager(const std::string& filename = table_data_filename)
+        : filename_(filename) {
         tables_ = nullptr;
         table_record_sizes_ = nullptr;
         table_count_ = 0;
@@ -80,9 +86,27 @@ class StorageManager : public GAMObject {
                kMaxTableNum * (Table::GetSerializeSize() + sizeof(size_t));
     }
 
+    void SaveCheckpoint(GAlloc* gallocator) {
+        for (size_t i = 0; i < table_count_; ++i) {
+            if (tables_[i] != NULL) {
+                SaveTable(i, gallocator);
+            }
+        }
+    }
+
+   private:
+    void SaveTable(const size_t& table_id, GAlloc* gallocator) {
+        std::ofstream output_file(filename_ + std::to_string(table_id),
+                                  std::ofstream::binary);
+        // assert(output_file.good() == true);
+        tables_[table_id]->SaveCheckpoint(output_file, gallocator);
+        output_file.close();
+    }
+
    public:
     Table** tables_;
     size_t* table_record_sizes_;
+    std::string filename_;
 
    private:
     size_t table_count_;

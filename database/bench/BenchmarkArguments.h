@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <string>
 
 #include "Meta.h"
 #include "ycsb/YcsbParameter.h"
@@ -29,6 +30,11 @@ static double ycsb_theta = THETA;
 static double ycsb_get_ratio = YCSB_GET_RATIO;
 static double ycsb_put_ratio = YCSB_PUT_RATIO;
 static double ycsb_update_ratio = YCSB_UPDATE_RATIO;
+// To use checkpoint
+static bool enable_checkpoint_reload = false;
+static bool enable_checkpoint_save = false;
+static std::string table_data_filename = "table_data";
+static std::string txn_data_filename = "txn_data";
 
 static void PrintUsage() {
     std::cout << "==========[USAGE]==========" << std::endl;
@@ -43,7 +49,7 @@ static void PrintUsage() {
               << std::endl;
     std::cout << "\t-rINT: READ_RATIO(optional, [0,100])" << std::endl;
     std::cout << "\t-lINT: TIME_LOCALITY(optional, [0,100])" << std::endl;
-
+    // ycsb
     std::cout << "\t-ythDOUBLE: YCSB_THETA(optional, [0,1],default=THETA(in "
                  "YcsbParameter.h) )"
               << std::endl;
@@ -62,6 +68,17 @@ static void PrintUsage() {
     std::cout << "If ycsb, -sf,-d,-r,-l now don't work and "
                  "-yth、-yget、-yput、-yup works"
               << std::endl;
+    // enable_checkpoint
+    std::cout << "\t-ecpsINT: ENABLE_CHECKPOINT_SAVE(optional 0/1,default=0 )"
+              << std::endl;
+    std::cout << "\t-ecprINT: ENABLE_CHECKPOINT_RELOAD(optional 0/1,default=0 )"
+              << std::endl;
+    std::cout << "\t-ecpafSTRING: TABLE DATA FILE NAME(default=table_data )"
+              << std::endl;
+    std::cout << "\t-ecpxfSTRING: TXN DATA FILE NAME(default=txn_data )"
+              << std::endl;
+
+    std::cout << "\tnow only ycsb can enable checkpoint" << std::endl;
     std::cout << "===========================" << std::endl;
     std::cout << "==========[EXAMPLES]==========" << std::endl;
     std::cout << "Benchmark -p11111 -c4 -sf10 -sf100 -t100000" << std::endl;
@@ -152,6 +169,20 @@ static void ArgumentsParser(int argc, char *argv[]) {
         } else if (argv[i][1] == 'y' && argv[i][2] == 'u' &&
                    argv[i][3] == 'p') {
             ycsb_update_ratio = atof(&argv[i][4]);
+        } else if (argv[i][1] == 'e' && argv[i][2] == 'c' &&
+                   argv[i][3] == 'p' && argv[i][4] == 's') {
+            enable_checkpoint_save = atoi(&argv[i][5]);
+        } else if (argv[i][1] == 'e' && argv[i][2] == 'c' &&
+                   argv[i][3] == 'p' && argv[i][4] == 'r') {
+            enable_checkpoint_reload = atoi(&argv[i][5]);
+        } else if (argv[i][1] == 'e' && argv[i][2] == 'c' &&
+                   argv[i][3] == 'p' && argv[i][4] == 'a' &&
+                   argv[i][5] == 'f') {
+            table_data_filename = std::string(&argv[i][6]);
+        } else if (argv[i][1] == 'e' && argv[i][2] == 'c' &&
+                   argv[i][3] == 'p' && argv[i][4] == 'x' &&
+                   argv[i][5] == 'f') {
+            txn_data_filename = std::string(&argv[i][6]);
         } else {
             PrintUsage();
             exit(0);

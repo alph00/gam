@@ -3,7 +3,7 @@ GAM_INCLUDE = -I../../include -I../ -I../../lib/libcuckoo/src -I../../lib/libcuc
 DB_INCLUDE = -I.. -I../bench -I../storage -I../txn -I../utils -I../content -I../profiler
 INCLUDE = $(GAM_INCLUDE) $(DB_INCLUDE)
 LIBS =  ../../src/libgalloc.a -libverbs -lboost_filesystem -lboost_system -lboost_date_time -lboost_thread ../../lib/libcuckoo/cityhash-1.1.1/src/.libs/libcityhash.a -lpthread
-CFLAGS +=  -O3 -DOCC -DUSE_NOCACHE_TS -DBACKOFF #-DPROFILE_CC_TS_ALLOC -DPROFILE_PHASE -DPROFILE_EXECUTION -DGAM_OPERATION_PROFILE -DPROFILE_CC_ABORT_TIME -DSCALABLE_TIMESTAMP  #-DPROFILE
+CFLAGS +=  -fsanitize=address -fno-omit-frame-pointer -g -DOCC -DUSE_NOCACHE_TS -DBACKOFF #-DPROFILE_CC_TS_ALLOC -DPROFILE_PHASE -DPROFILE_EXECUTION -DGAM_OPERATION_PROFILE -DPROFILE_CC_ABORT_TIME -DSCALABLE_TIMESTAMP  #-DPROFILE
 # -fsanitize=address -fno-omit-frame-pointer -g
 all: ycsb
 build: ycsb

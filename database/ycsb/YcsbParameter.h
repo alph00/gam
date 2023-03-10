@@ -10,9 +10,11 @@
 
 //  data parameter
 #define YCSB_TABLE_LENTH 39999  // 表的大小
-#define YCSB_TABLE_F_INT_SIZE 4
+#define YCSB_TABLE_F_INT_SIZE \
+    4  // 更改这里时还要注意更改YcsbRecords.h里F0的类型
 #define YCSB_TABLE_F_STRING_SIZE \
     32  // string size为55是record<512条件下的最大值
+#define YCSB_TABLE_ITEMCOUNT 10  // 表的项数
 // record size=4+9*string size+1+8
 
 // #define YCSB_TABLE_F_INT_MIN 1

@@ -5,6 +5,10 @@
 #include "HashIndexHelper.h"
 // #include "Profiler.h"
 #include "Profilers.h"
+#include "Record.h"
+#include "RecordSchema.h"
+#include "gallocator.h"
+#include "structure.h"
 
 namespace Database {
 class HashIndex : public GAMObject {
@@ -115,6 +119,17 @@ class HashIndex : public GAMObject {
     }
     uint64_t GetRecordCount() const { return record_count_; }
     uint64_t GetBucketsCount() const { return buckets_count_; }
+
+    void SaveCheckpoint(std::ofstream& out_stream, const size_t& record_size,
+                        GAlloc* gallocator, RecordSchema* schema) {
+        for (auto i = 0; i < record_count_; ++i) {
+            GAddr addr = SearchRecord((Key)i, gallocator, 0);
+            Record* record = new Record(schema);
+            record->Deserialize(addr, gallocator);
+            out_stream.write(record->GetDataPtr(), record_size);
+        }
+        out_stream.flush();
+    }
 
    private:
     HashIndex(const HashIndex&);

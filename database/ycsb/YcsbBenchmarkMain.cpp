@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     GAddr storage_addr = initiator.InitStorage();
     synchronizer.MasterBroadcast<GAddr>(&storage_addr);
     std::cout << "storage_addr=" << storage_addr << std::endl;
-    StorageManager storage_manager;
+    StorageManager storage_manager(table_data_filename);
     storage_manager.Deserialize(storage_addr, default_gallocator);
 
     GAddr epoch_addr = Gnullptr;
@@ -69,13 +69,18 @@ int main(int argc, char *argv[]) {
     populator.Start();
     REPORT_PROFILERS;
     synchronizer.Fence();
+    if (enable_checkpoint_save) {
+        storage_manager.SaveCheckpoint(
+            gallocators[0]);  // to qfs 这里的gallocators应该用这个吗?
+        synchronizer.Fence();
+    }
 
     // generate workload
     IORedirector redirector(gThreadCount);
     size_t access_pattern = 0;
     YcsbSource sourcer(&redirector, num_txn, SourceType::PARTITION_SOURCE,
                        gThreadCount, dist_ratio, config.GetMyPartitionId(),
-                       &storage_manager);
+                       &storage_manager, txn_data_filename);
     // TpccSource sourcer(&tpcc_scale_params, &redirector, num_txn,
     // SourceType::RANDOM_SOURCE, gThreadCount, dist_ratio);
     sourcer.Start();
