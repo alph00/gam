@@ -1,9 +1,12 @@
 #ifndef __DATABASE_META_H__
 #define __DATABASE_META_H__
 
+#include <fcntl.h>
+
 #include <cstdint>
 #include <cstring>
 
+#include "ColumnInfo.h"
 #include "gallocator.h"
 
 namespace Database {
@@ -34,7 +37,8 @@ extern GAlloc* default_gallocator;
 extern GAlloc* epoch_gallocator;
 extern GAlloc** gallocators;
 extern size_t gThreadCount;
-
+extern int64_t recordnum;
+extern bool ok;
 // source
 extern size_t gParamBatchSize;
 

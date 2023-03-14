@@ -16,6 +16,10 @@ class Record : public GAMObject {
         data_size_ = schema_ptr_->GetSchemaSize();
         data_ptr_ = new char[data_size_];
     }
+    Record(RecordSchema *schema_ptr, char *data_ptr) : schema_ptr_(schema_ptr) {
+        data_size_ = schema_ptr_->GetSchemaSize();
+        data_ptr_ = data_ptr;
+    }
     ~Record() { Release(); }
 
     void SetColumn(size_t col_id, void *data) {

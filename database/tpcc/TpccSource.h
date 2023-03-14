@@ -90,11 +90,13 @@ class TpccSource : public BenchmarkSource {
                     tuples->push_back(param);
                 }
                 if ((i + 1) % gParamBatchSize == 0) {
+                    if (enable_checkpoint_save) DumpToDisk(tuples);
                     redirector_ptr_->PushParameterBatch(tuples);
                     tuples = new ParamBatch(gParamBatchSize);
                 }
             }
             if (tuples->size() != 0) {
+                if (enable_checkpoint_save) DumpToDisk(tuples);
                 redirector_ptr_->PushParameterBatch(tuples);
             }
         } else if (source_type_ == PARTITION_SOURCE) {
@@ -140,12 +142,14 @@ class TpccSource : public BenchmarkSource {
                     tuples->push_back(param);
                 }
                 if ((i + 1) % gParamBatchSize == 0) {
+                    if (enable_checkpoint_save) DumpToDisk(tuples);
                     redirector_ptr_->PushParameterBatch(tuples);
                     tuples = new ParamBatch(gParamBatchSize);
                     thread_id = (thread_id + 1) % thread_count_;
                 }
             }
             if (tuples->size() != 0) {
+                if (enable_checkpoint_save) DumpToDisk(tuples);
                 redirector_ptr_->PushParameterBatch(tuples);
             } else {
                 delete tuples;
@@ -160,6 +164,26 @@ class TpccSource : public BenchmarkSource {
                          (total_write_access_count_ + total_read_access_count_ +
                           total_insert_access_count_)
                   << std::endl;
+    }
+    virtual TxnParam *DeserializeParam(const size_t &param_type,
+                                       const CharArray &entry) {
+        TxnParam *tuple;
+        if (param_type == TupleType::DELIVERY) {
+            tuple = new DeliveryParam();
+        } else if (param_type == TupleType::NEW_ORDER) {
+            tuple = new NewOrderParam();
+        } else if (param_type == TupleType::PAYMENT) {
+            tuple = new PaymentParam();
+        } else if (param_type == TupleType::ORDER_STATUS) {
+            tuple = new OrderStatusParam();
+        } else if (param_type == TupleType::STOCK_LEVEL) {
+            tuple = new StockLevelParam();
+        } else {
+            assert(false);
+            return NULL;
+        }
+        tuple->Deserialize(entry);
+        return tuple;
     }
 
     void ProfileReadWriteAccess(size_t type) {
@@ -227,8 +251,11 @@ class TpccSource : public BenchmarkSource {
                 // param->i_w_ids_[i] =
                 //     TpccRandomGenerator::GenerateIntegerExcluding(
                 //         1, scale_params_->num_warehouses_, param->w_id_);
-                param->i_w_ids_[i] = TpccRandomGenerator::GenerateIntegerExcludingRange(1, scale_params_->num_warehouses_,
-                                                    scale_params_->starting_warehouse_, scale_params_->ending_warehouse_);
+                param->i_w_ids_[i] =
+                    TpccRandomGenerator::GenerateIntegerExcludingRange(
+                        1, scale_params_->num_warehouses_,
+                        scale_params_->starting_warehouse_,
+                        scale_params_->ending_warehouse_);
             } else {
                 param->i_w_ids_[i] = param->w_id_;
             }
@@ -410,8 +437,10 @@ class TpccSource : public BenchmarkSource {
             // select in range [1, num_warehouses] excluding w_id
             // param->c_w_id_ = TpccRandomGenerator::GenerateIntegerExcluding(
             //     1, scale_params_->num_warehouses_, param->w_id_);
-            param->c_w_id_ = TpccRandomGenerator::GenerateIntegerExcludingRange(1, scale_params_->num_warehouses_,
-                                                                                scale_params_->starting_warehouse_, scale_params_->ending_warehouse_);
+            param->c_w_id_ = TpccRandomGenerator::GenerateIntegerExcludingRange(
+                1, scale_params_->num_warehouses_,
+                scale_params_->starting_warehouse_,
+                scale_params_->ending_warehouse_);
             param->c_d_id_ = TpccRandomGenerator::GenerateDistrictId(
                 scale_params_->num_districts_per_warehouse_);
         }

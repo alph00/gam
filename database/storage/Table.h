@@ -10,6 +10,10 @@
 #include "RecordSchema.h"
 #include "TableRecord.h"
 #include "gallocator.h"
+#include "tpcc/TpccConstants.h"
+#include "tpcc/TpccKeyGenerator.h"
+#include "tpcc/TpccParams.h"
+
 // #include "Profiler.h"
 
 namespace Database {
@@ -102,6 +106,237 @@ class Table : public GAMObject {
         size_t record_size = schema_ptr_->GetSchemaSize();
         primary_index_->SaveCheckpoint(out_stream, record_size, gallocator,
                                        schema_ptr_);
+    }
+    void ReloadCheckpoint(std::ifstream& in_stream) {  //只有TPCC走这里
+        size_t record_size = schema_ptr_->GetSchemaSize();
+        in_stream.seekg(0, std::ios::end);
+        size_t file_size = static_cast<size_t>(in_stream.tellg());
+        in_stream.seekg(0, std::ios::beg);
+        size_t file_pos = 0;
+        while (file_pos < file_size) {
+            char* entry = new char[record_size];
+            in_stream.read(entry, record_size);
+            if (schema_ptr_->GetTableId() ==
+                TpccBenchmark::TableType::ITEM_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(5, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    int iid = -1;
+                    record->GetColumn(0, &iid);
+                    IndexKey key = TpccBenchmark::GetItemPrimaryKey(iid, wid);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            } else if (schema_ptr_->GetTableId() ==
+                       TpccBenchmark::TableType::WAREHOUSE_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(0, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    IndexKey key = TpccBenchmark::GetWarehousePrimaryKey(wid);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            } else if (schema_ptr_->GetTableId() ==
+                       TpccBenchmark::TableType::DISTRICT_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(1, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    int did = -1;
+                    record->GetColumn(0, &did);
+                    IndexKey key =
+                        TpccBenchmark::GetDistrictPrimaryKey(did, wid);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            } else if (schema_ptr_->GetTableId() ==
+                       TpccBenchmark::TableType::CUSTOMER_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(2, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    int cid = -1;
+                    record->GetColumn(0, &cid);
+                    int cdid = -1;
+                    record->GetColumn(1, &cdid);
+                    IndexKey key =
+                        TpccBenchmark::GetCustomerPrimaryKey(cid, cdid, wid);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            } else if (schema_ptr_->GetTableId() ==
+                       TpccBenchmark::TableType::HISTORY_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(4, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    int hcid = -1;
+                    record->GetColumn(0, &hcid);
+                    int hdid = -1;
+                    record->GetColumn(3, &hdid);
+                    IndexKey key =
+                        TpccBenchmark::GetHistoryPrimaryKey(hcid, hdid, wid);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            } else if (schema_ptr_->GetTableId() ==
+                       TpccBenchmark::TableType::DISTRICT_NEW_ORDER_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(0, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    int did = -1;
+                    record->GetColumn(1, &did);
+                    IndexKey key =
+                        TpccBenchmark::GetDistrictNewOrderPrimaryKey(did, wid);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            } else if (schema_ptr_->GetTableId() ==
+                       TpccBenchmark::TableType::NEW_ORDER_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(2, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    int oid = -1;
+                    record->GetColumn(0, &oid);
+                    int did = -1;
+                    record->GetColumn(1, &did);
+                    IndexKey key =
+                        TpccBenchmark::GetNewOrderPrimaryKey(oid, did, wid);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            } else if (schema_ptr_->GetTableId() ==
+                       TpccBenchmark::TableType::ORDER_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(3, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    int oid = -1;
+                    record->GetColumn(0, &oid);
+                    int odid = -1;
+                    record->GetColumn(2, &odid);
+                    IndexKey key =
+                        TpccBenchmark::GetOrderPrimaryKey(oid, odid, wid);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            } else if (schema_ptr_->GetTableId() ==
+                       TpccBenchmark::TableType::ORDER_LINE_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(2, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    int oloid = -1;
+                    record->GetColumn(0, &oloid);
+                    int oldid = -1;
+                    record->GetColumn(1, &oldid);
+                    int olnumber = -1;
+                    record->GetColumn(3, &olnumber);
+                    IndexKey key = TpccBenchmark::GetOrderLinePrimaryKey(
+                        oloid, oldid, wid, olnumber);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            } else if (schema_ptr_->GetTableId() ==
+                       TpccBenchmark::TableType::STOCK_TABLE_ID) {
+                Record* record = new Record(schema_ptr_, entry);
+                int wid = -1;
+                record->GetColumn(1, &wid);
+                if (wid <=
+                        TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
+                    wid > TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
+                    Record* record_buf = new Record(schema_ptr_);
+                    TableRecord* table_record_buf = new TableRecord(record_buf);
+                    GAlloc* gallocator = gallocators[0];
+                    GAddr data_addr = gallocator->AlignedMalloc(
+                        table_record_buf->GetSerializeSize());
+                    record_buf->SetVisible(true);
+                    record_buf->Serialize(data_addr, gallocator);
+                    int siid = -1;
+                    record->GetColumn(0, &siid);
+                    IndexKey key = TpccBenchmark::GetStockPrimaryKey(siid, wid);
+                    InsertRecord(&key, 1, data_addr, gallocator, 0);
+                }
+            }
+
+            file_pos += record_size;
+        }
     }
 
    private:

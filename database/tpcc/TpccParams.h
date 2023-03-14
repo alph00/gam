@@ -23,7 +23,7 @@ struct TpccScaleParams {
     int num_new_orders_per_district_;
 };
 // Global
-TpccScaleParams tpcc_scale_params;
+extern TpccScaleParams tpcc_scale_params;
 
 static void FillScaleParams(ClusterConfig& config) {
     assert(factor_count == 2);

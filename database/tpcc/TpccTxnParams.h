@@ -6,6 +6,7 @@
 
 #include "CharArray.h"
 #include "TpccConstants.h"
+#include "TxnParam.h"
 
 namespace Database {
 namespace TpccBenchmark {
@@ -14,6 +15,26 @@ class DeliveryParam : public TxnParam {
    public:
     DeliveryParam() { type_ = DELIVERY; }
     virtual ~DeliveryParam() {}
+    virtual void Serialize(CharArray& serial_str) const {
+        serial_str.Allocate(sizeof(int) + sizeof(int) + sizeof(int64_t));
+        serial_str.Memcpy(0, reinterpret_cast<const char*>(&w_id_),
+                          sizeof(int));
+        serial_str.Memcpy(sizeof(int),
+                          reinterpret_cast<const char*>(&o_carrier_id_),
+                          sizeof(int));
+        serial_str.Memcpy(sizeof(int) + sizeof(int),
+                          reinterpret_cast<const char*>(&ol_delivery_d_),
+                          sizeof(int64_t));
+    }
+    virtual void Deserialize(const CharArray& serial_str) {
+        memcpy(reinterpret_cast<char*>(&w_id_), serial_str.char_ptr_,
+               sizeof(int));
+        memcpy(reinterpret_cast<char*>(&o_carrier_id_),
+               serial_str.char_ptr_ + sizeof(int), sizeof(int));
+        memcpy(reinterpret_cast<char*>(&ol_delivery_d_),
+               serial_str.char_ptr_ + sizeof(int) + sizeof(int),
+               sizeof(int64_t));
+    }
 
    public:
     int w_id_;
@@ -31,6 +52,61 @@ class NewOrderParam : public TxnParam {
    public:
     NewOrderParam() { type_ = NEW_ORDER; }
     virtual ~NewOrderParam() {}
+    virtual void Serialize(CharArray& serial_str) const {
+        serial_str.Allocate(sizeof(int) * 3 + sizeof(int64_t) + sizeof(size_t) +
+                            sizeof(int) * 45);
+        size_t offset = 0;
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&w_id_),
+                          sizeof(int));
+        offset += sizeof(int);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&d_id_),
+                          sizeof(int));
+        offset += sizeof(int);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&c_id_),
+                          sizeof(int));
+        offset += sizeof(int);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&o_entry_d_),
+                          sizeof(int64_t));
+        offset += sizeof(int64_t);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&ol_cnt_),
+                          sizeof(size_t));
+        offset += sizeof(size_t);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(i_ids_),
+                          sizeof(int) * 15);
+        offset += sizeof(int) * 15;
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(i_w_ids_),
+                          sizeof(int) * 15);
+        offset += sizeof(int) * 15;
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(i_qtys_),
+                          sizeof(int) * 15);
+    }
+
+    virtual void Deserialize(const CharArray& serial_str) {
+        size_t offset = 0;
+        memcpy(reinterpret_cast<char*>(&w_id_), serial_str.char_ptr_ + offset,
+               sizeof(int));
+        offset += sizeof(int);
+        memcpy(reinterpret_cast<char*>(&d_id_), serial_str.char_ptr_ + offset,
+               sizeof(int));
+        offset += sizeof(int);
+        memcpy(reinterpret_cast<char*>(&c_id_), serial_str.char_ptr_ + offset,
+               sizeof(int));
+        offset += sizeof(int);
+        memcpy(reinterpret_cast<char*>(&o_entry_d_),
+               serial_str.char_ptr_ + offset, sizeof(int64_t));
+        offset += sizeof(int64_t);
+        memcpy(reinterpret_cast<char*>(&ol_cnt_), serial_str.char_ptr_ + offset,
+               sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(reinterpret_cast<char*>(i_ids_), serial_str.char_ptr_ + offset,
+               sizeof(int) * 15);
+        offset += sizeof(int) * 15;
+        memcpy(reinterpret_cast<char*>(i_w_ids_), serial_str.char_ptr_ + offset,
+               sizeof(int) * 15);
+        offset += sizeof(int) * 15;
+        memcpy(reinterpret_cast<char*>(i_qtys_), serial_str.char_ptr_ + offset,
+               sizeof(int) * 15);
+    }
 
    public:
     int w_id_;
@@ -66,6 +142,54 @@ class PaymentParam : public TxnParam {
    public:
     PaymentParam() { type_ = PAYMENT; }
     virtual ~PaymentParam() {}
+    virtual void Serialize(CharArray& serial_str) const {
+        serial_str.Allocate(sizeof(int) * 5 + sizeof(double) + sizeof(int64_t));
+        size_t offset = 0;
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&w_id_),
+                          sizeof(int));
+        offset += sizeof(int);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&d_id_),
+                          sizeof(int));
+        offset += sizeof(int);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&h_amount_),
+                          sizeof(double));
+        offset += sizeof(double);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&c_w_id_),
+                          sizeof(int));
+        offset += sizeof(int);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&c_d_id_),
+                          sizeof(int));
+        offset += sizeof(int);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&c_id_),
+                          sizeof(int));
+        offset += sizeof(int);
+        serial_str.Memcpy(offset, reinterpret_cast<const char*>(&h_date_),
+                          sizeof(int64_t));
+    }
+
+    virtual void Deserialize(const CharArray& serial_str) {
+        size_t offset = 0;
+        memcpy(reinterpret_cast<char*>(&w_id_), serial_str.char_ptr_ + offset,
+               sizeof(int));
+        offset += sizeof(int);
+        memcpy(reinterpret_cast<char*>(&d_id_), serial_str.char_ptr_ + offset,
+               sizeof(int));
+        offset += sizeof(int);
+        memcpy(reinterpret_cast<char*>(&h_amount_),
+               serial_str.char_ptr_ + offset, sizeof(double));
+        offset += sizeof(double);
+        memcpy(reinterpret_cast<char*>(&c_w_id_), serial_str.char_ptr_ + offset,
+               sizeof(int));
+        offset += sizeof(int);
+        memcpy(reinterpret_cast<char*>(&c_d_id_), serial_str.char_ptr_ + offset,
+               sizeof(int));
+        offset += sizeof(int);
+        memcpy(reinterpret_cast<char*>(&c_id_), serial_str.char_ptr_ + offset,
+               sizeof(int));
+        offset += sizeof(int);
+        memcpy(reinterpret_cast<char*>(&h_date_), serial_str.char_ptr_ + offset,
+               sizeof(int64_t));
+    }
 
    public:
     int w_id_;
@@ -89,6 +213,24 @@ class OrderStatusParam : public TxnParam {
    public:
     OrderStatusParam() { type_ = ORDER_STATUS; }
     virtual ~OrderStatusParam() {}
+    virtual void Serialize(CharArray& serial_str) const {
+        serial_str.Allocate(sizeof(int) + sizeof(int) + sizeof(int));
+        serial_str.Memcpy(0, reinterpret_cast<const char*>(&w_id_),
+                          sizeof(int));
+        serial_str.Memcpy(sizeof(int), reinterpret_cast<const char*>(&d_id_),
+                          sizeof(int));
+        serial_str.Memcpy(sizeof(int) + sizeof(int),
+                          reinterpret_cast<const char*>(&c_id_), sizeof(int));
+    }
+
+    virtual void Deserialize(const CharArray& serial_str) {
+        memcpy(reinterpret_cast<char*>(&w_id_), serial_str.char_ptr_,
+               sizeof(int));
+        memcpy(reinterpret_cast<char*>(&d_id_),
+               serial_str.char_ptr_ + sizeof(int), sizeof(int));
+        memcpy(reinterpret_cast<char*>(&c_id_),
+               serial_str.char_ptr_ + sizeof(int) + sizeof(int), sizeof(int));
+    }
 
    public:
     int w_id_;
@@ -101,6 +243,20 @@ class StockLevelParam : public TxnParam {
    public:
     StockLevelParam() { type_ = STOCK_LEVEL; }
     virtual ~StockLevelParam() {}
+    virtual void Serialize(CharArray& serial_str) const {
+        serial_str.Allocate(sizeof(int) + sizeof(int));
+        serial_str.Memcpy(0, reinterpret_cast<const char*>(&w_id_),
+                          sizeof(int));
+        serial_str.Memcpy(sizeof(int), reinterpret_cast<const char*>(&d_id_),
+                          sizeof(int));
+    }
+
+    virtual void Deserialize(const CharArray& serial_str) {
+        memcpy(reinterpret_cast<char*>(&w_id_), serial_str.char_ptr_,
+               sizeof(int));
+        memcpy(reinterpret_cast<char*>(&d_id_),
+               serial_str.char_ptr_ + sizeof(int), sizeof(int));
+    }
 
    public:
     int w_id_;

@@ -54,13 +54,13 @@ class YcsbSource : public BenchmarkSource {
                 param = GenerateYcsbParam();
                 tuples->push_back(param);
                 if ((i + 1) % gParamBatchSize == 0) {
-                    DumpToDisk(tuples);
+                    if (enable_checkpoint_save) DumpToDisk(tuples);
                     redirector_ptr_->PushParameterBatch(tuples);
                     tuples = new ParamBatch(gParamBatchSize);
                 }
             }
             if (tuples->size() != 0) {
-                DumpToDisk(tuples);
+                if (enable_checkpoint_save) DumpToDisk(tuples);
                 redirector_ptr_->PushParameterBatch(tuples);
             }
         } else if (source_type_ == PARTITION_SOURCE) {
@@ -71,13 +71,13 @@ class YcsbSource : public BenchmarkSource {
                 param = GenerateYcsbParam();
                 tuples->push_back(param);
                 if ((i + 1) % gParamBatchSize == 0) {
-                    DumpToDisk(tuples);
+                    if (enable_checkpoint_save) DumpToDisk(tuples);
                     redirector_ptr_->PushParameterBatch(tuples);
                     tuples = new ParamBatch(gParamBatchSize);
                 }
             }
             if (tuples->size() != 0) {
-                DumpToDisk(tuples);
+                if (enable_checkpoint_save) DumpToDisk(tuples);
                 redirector_ptr_->PushParameterBatch(tuples);
             }
         }
@@ -152,6 +152,18 @@ class YcsbSource : public BenchmarkSource {
         // }
         // ofs.close();
         return param;
+    }
+    virtual TxnParam *DeserializeParam(const size_t &param_type,
+                                       const CharArray &entry) {
+        TxnParam *tuple;
+        if (param_type == TupleType::YCSB) {
+            tuple = new YcsbParam();
+        } else {
+            assert(false);
+            return NULL;
+        }
+        tuple->Deserialize(entry);
+        return tuple;
     }
 };
 }  // namespace YcsbBenchmark

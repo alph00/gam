@@ -53,8 +53,7 @@ class BenchmarkSource {
    protected:
     void DumpToDisk(ParamBatch* tuples) {
         for (size_t i = 0; i < tuples->size(); ++i) {
-            YcsbBenchmark::YcsbParam* tuple =
-                reinterpret_cast<YcsbBenchmark::YcsbParam*>(tuples->get(i));
+            TxnParam* tuple = (tuples->get(i));
             CharArray param_chars;
             tuple->Serialize(param_chars);
             // write stored procedure type.
@@ -91,9 +90,7 @@ class BenchmarkSource {
             file_pos += sizeof(entry.size_);
             if (file_size - file_pos >= entry.size_) {
                 log_reloader.read(entry.char_ptr_, entry.size_);
-                YcsbBenchmark::YcsbParam* event_tuple =
-                    new YcsbBenchmark::YcsbParam();
-                event_tuple->Deserialize(entry);
+                TxnParam* event_tuple = DeserializeParam(param_type, entry);
                 if (event_tuple != NULL) {
                     tuples->push_back(event_tuple);
                     if (tuples->size() == gParamBatchSize) {
@@ -115,6 +112,8 @@ class BenchmarkSource {
         entry.Release();
         log_reloader.close();
     }
+    virtual TxnParam* DeserializeParam(const size_t& param_type,
+                                       const CharArray&) = 0;
 
    protected:
     IORedirector* redirector_ptr_;

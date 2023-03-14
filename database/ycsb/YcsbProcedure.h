@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -30,28 +31,49 @@ class YcsbProcedure : public StoredProcedure {
         epicLog(LOG_DEBUG, "thread_id=%u,start ycsb", thread_id_);
         YcsbParam *ycsb_param = static_cast<YcsbParam *>(param);
         // execute
+        ofstream recordout("no-sense.txt", ios::app);
         for (auto j = 0; j < ycsb_param->Txnlength; ++j) {
             if (ycsb_param->op[j].type == YcsbGet) {  // get
                 Record *record = nullptr;
                 DB_QUERY(SearchRecord(&context_, MAIN_TABLE_ID,
                                       ycsb_param->op[j].key, record,
                                       READ_ONLY));
+                if (ok)
+                    recordout << "**" << recordnum++ << " "
+                              << ycsb_param->op[j].key << " " << YcsbGet << " ";
                 for (auto i = 1; i < record->GetSchema()->GetColumnCount() - 1;
                      ++i) {
                     char field[record->GetSchema()->GetColumnSize(i)];
                     record->GetColumn(i, field);
+                    if (ok)
+                        recordout
+                            << std::string(
+                                   field, record->GetSchema()->GetColumnSize(i))
+                            << " + ";
                 }
+                if (ok) recordout << "~~" << endl;
             } else if (ycsb_param->op[j].type == YcsbUpdate) {  // update
                 Record *record = nullptr;
                 DB_QUERY(SearchRecord(&context_, MAIN_TABLE_ID,
                                       ycsb_param->op[j].key, record,
                                       READ_WRITE));
+                if (ok)
+                    recordout << "**" << recordnum++ << " "
+                              << ycsb_param->op[j].key << " " << YcsbUpdate
+                              << " ";
                 for (auto i = 1; i < record->GetSchema()->GetColumnCount() - 1;
                      ++i) {
                     char field[record->GetSchema()->GetColumnSize(i)];
                     record->GetColumn(i, field);
+                    if (ok)
+                        recordout
+                            << std::string(
+                                   field, record->GetSchema()->GetColumnSize(i))
+                            << " + ";
+                    // assert(ycsb_param->op[j].wq[i].second != nullptr);
                     record->SetColumn(i, ycsb_param->op[j].wq[i].second);
                 }
+                if (ok) recordout << "~~" << endl;
             } else {
                 // to do for insert
             }

@@ -14,6 +14,8 @@ class TxnParam {
    public:
     TxnParam() {}
     virtual ~TxnParam() {}
+    virtual void Serialize(CharArray &serial_str) const = 0;
+    virtual void Deserialize(const CharArray &serial_str) = 0;
 
    public:
     size_t type_;

@@ -94,6 +94,14 @@ class StorageManager : public GAMObject {
         }
     }
 
+    void ReloadCheckpoint() {
+        for (size_t i = 0; i < table_count_; ++i) {
+            if (tables_[i] != NULL) {
+                ReloadTable(i);
+            }
+        }
+    }
+
    private:
     void SaveTable(const size_t& table_id, GAlloc* gallocator) {
         std::ofstream output_file(filename_ + std::to_string(table_id),
@@ -101,6 +109,14 @@ class StorageManager : public GAMObject {
         // assert(output_file.good() == true);
         tables_[table_id]->SaveCheckpoint(output_file, gallocator);
         output_file.close();
+    }
+
+    void ReloadTable(const size_t& table_id) {
+        std::ifstream input_file(filename_ + std::to_string(table_id),
+                                 std::ifstream::binary);
+        assert(input_file.good() == true);
+        tables_[table_id]->ReloadCheckpoint(input_file);
+        input_file.close();
     }
 
    public:

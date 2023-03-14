@@ -65,13 +65,25 @@ int main(int argc, char* argv[]) {
 
     // populate database
     // INIT_PROFILE_TIME(gThreadCount);
-    INIT_PROFILERS;
-    // 每个node负责自己所属的(start, end warehouse), 生成初始数据并写入gam
-    TpccPopulator populator(&storage_manager, &tpcc_scale_params);
-    populator.Start();
-    // REPORT_PROFILE_TIME(gThreadCount);
-    REPORT_PROFILERS;
+    if (enable_checkpoint_reload) {
+        INIT_PROFILERS;
+        storage_manager.ReloadCheckpoint();
+        REPORT_PROFILERS;
+    } else {
+        INIT_PROFILERS;
+        // 每个node负责自己所属的(start, end warehouse), 生成初始数据并写入gam
+        TpccPopulator populator(&storage_manager, &tpcc_scale_params);
+        populator.Start();
+        // REPORT_PROFILE_TIME(gThreadCount);
+        REPORT_PROFILERS;
+    }
     synchronizer.Fence();
+
+    if (enable_checkpoint_save) {
+        storage_manager.SaveCheckpoint(
+            gallocators[0]);  // to qfs 这里的gallocators应该用这个吗?
+        synchronizer.Fence();
+    }
 
     // generate workload
     IORedirector redirector(gThreadCount);
@@ -92,8 +104,10 @@ int main(int argc, char* argv[]) {
                               gThreadCount);
         executor.Start();
         // REPORT_PROFILE_TIME(gThreadCount);
+        ok = true;
         REPORT_PROFILERS;
     }
+    ok = false;
     synchronizer.Fence();
 
     {
