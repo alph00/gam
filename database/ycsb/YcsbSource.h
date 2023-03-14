@@ -130,8 +130,8 @@ class YcsbSource : public BenchmarkSource {
                 RecordSchema *schema =
                     storage_manager_->tables_[MAIN_TABLE_ID]->GetSchema();
                 std::size_t ValueFieldNum = schema->GetColumnCount() - 1;
-                param->op[j].wq = (pair<uint64_t, char *> *)malloc(
-                    ValueFieldNum * sizeof(pair<uint64_t, char *>));
+                param->op[j].wq = (pair<int, char *> *)malloc(
+                    ValueFieldNum * sizeof(pair<int, char *>));
                 for (auto i = 1; i < ValueFieldNum; ++i) {
                     std::string data_s =
                         YcsbRandomGenerator::GenerateAString(MIN_F1, MAX_F1);

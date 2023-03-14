@@ -58,10 +58,10 @@ class YcsbPopulator : public BenchmarkPopulator {
                         char *entry = new char[record_size];
                         input_file.read(entry, record_size);
                         memcpy(&ycsbrecord->F0, entry, YCSB_TABLE_F_INT_SIZE);
-                        for (auto i = 1; i < YCSB_TABLE_ITEMCOUNT; ++i) {
+                        for (auto i = 0; i < YCSB_TABLE_ITEMCOUNT - 1; ++i) {
                             memcpy(ycsbrecord->F[i],
                                    entry + YCSB_TABLE_F_INT_SIZE +
-                                       YCSB_TABLE_F_STRING_SIZE * (i - 1),
+                                       YCSB_TABLE_F_STRING_SIZE * i,
                                    YCSB_TABLE_F_STRING_SIZE);
                         }
                         InsertMainTableRecord(ycsbrecord, MainTable_record_buf,
@@ -87,10 +87,10 @@ class YcsbPopulator : public BenchmarkPopulator {
                     char *entry = new char[record_size];
                     input_file.read(entry, record_size);
                     memcpy(&ycsbrecord->F0, entry, YCSB_TABLE_F_INT_SIZE);
-                    for (auto i = 1; i < YCSB_TABLE_ITEMCOUNT; ++i) {
+                    for (auto i = 0; i < YCSB_TABLE_ITEMCOUNT - 1; ++i) {
                         memcpy(ycsbrecord->F[i],
                                entry + YCSB_TABLE_F_INT_SIZE +
-                                   YCSB_TABLE_F_STRING_SIZE * (i - 1),
+                                   YCSB_TABLE_F_STRING_SIZE * i,
                                YCSB_TABLE_F_STRING_SIZE);
                     }
                     if (record_cnt < (YCSB_TABLE_LENTH / num) * (num)) {
@@ -151,7 +151,7 @@ class YcsbPopulator : public BenchmarkPopulator {
     ClusterConfig *config__;
     void GenerateMainTableRecordRandom(int id, YcsbRecord *record_buf) const {
         record_buf->F0 = id;
-        for (auto i = 1; i < YCSB_TABLE_ITEMCOUNT; ++i) {
+        for (auto i = 0; i < YCSB_TABLE_ITEMCOUNT - 1; ++i) {
             std::string data_s =
                 YcsbRandomGenerator::GenerateAString(MIN_F1, MAX_F1);
             memcpy(record_buf->F[i], data_s.c_str(), data_s.length());
@@ -169,7 +169,7 @@ class YcsbPopulator : public BenchmarkPopulator {
 
         for (auto i = 1; i < record_buf->GetSchema()->GetColumnCount() - 1;
              ++i) {
-            record_buf->SetColumn(i, record->F[i]);
+            record_buf->SetColumn(i, record->F[i - 1]);
         }
 
         record_buf->SetVisible(true);

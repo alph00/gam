@@ -1,6 +1,8 @@
 #ifndef __DATABASE_YCSB_TXN_PARAMS_H__
 #define __DATABASE_YCSB_TXN_PARAMS_H__
 
+#include <bits/stdint-uintn.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <queue>
@@ -20,14 +22,15 @@ class YcsbOp {
    public:
     int type;
     Key key;
-    pair<uint64_t, char*>* wq;
+    pair<int, char*>* wq;
 };
 
 class YcsbParam : public TxnParam {
    public:
     virtual void Serialize(CharArray& serial_str) const {
-        size_t SizeOfYcsbOp =
-            (sizeof(int) + sizeof(Key) + sizeof(pair<uint64_t, char*>*));
+        size_t SizeOfpair = (sizeof(int) + YCSB_TABLE_F_STRING_SIZE);
+        size_t SizeOfwq = (YCSB_TABLE_ITEMCOUNT - 1) * SizeOfpair;
+        size_t SizeOfYcsbOp = (sizeof(int) + sizeof(Key) + SizeOfwq);
         serial_str.Allocate(sizeof(int) + YCSB_TXN_LEHTH * SizeOfYcsbOp);
         serial_str.Memcpy(0, reinterpret_cast<const char*>(&Txnlength),
                           sizeof(int));
@@ -38,16 +41,26 @@ class YcsbParam : public TxnParam {
             serial_str.Memcpy(sizeof(int) + i * SizeOfYcsbOp + sizeof(int),
                               reinterpret_cast<const char*>(&op[i].key),
                               sizeof(Key));
-            serial_str.Memcpy(
-                sizeof(int) + i * SizeOfYcsbOp + sizeof(int) + sizeof(Key),
-                reinterpret_cast<const char*>(&op[i].wq),
-                sizeof(pair<uint64_t, char*>*));
+            for (auto j = 1; j < YCSB_TABLE_ITEMCOUNT; ++j) {
+                if (op[i].type == YcsbUpdate) {
+                    serial_str.Memcpy(
+                        sizeof(int) + i * SizeOfYcsbOp + sizeof(int) +
+                            sizeof(Key) + (j - 1) * SizeOfpair,
+                        reinterpret_cast<const char*>(&op[i].wq[j].first),
+                        sizeof(int));
+                    serial_str.Memcpy(
+                        sizeof(int) + i * SizeOfYcsbOp + sizeof(int) +
+                            sizeof(Key) + (j - 1) * SizeOfpair + sizeof(int),
+                        op[i].wq[j].second, YCSB_TABLE_F_STRING_SIZE);
+                }
+            }
         }
     }
 
     virtual void Deserialize(const CharArray& serial_str) {
-        size_t SizeOfYcsbOp =
-            (sizeof(int) + sizeof(Key) + sizeof(pair<uint64_t, char*>*));
+        size_t SizeOfpair = (sizeof(int) + YCSB_TABLE_F_STRING_SIZE);
+        size_t SizeOfwq = (YCSB_TABLE_ITEMCOUNT - 1) * SizeOfpair;
+        size_t SizeOfYcsbOp = (sizeof(int) + sizeof(Key) + SizeOfwq);
         memcpy(reinterpret_cast<char*>(&Txnlength), serial_str.char_ptr_,
                sizeof(int));
         for (auto i = 0; i < YCSB_TXN_LEHTH; ++i) {
@@ -58,10 +71,24 @@ class YcsbParam : public TxnParam {
                    serial_str.char_ptr_ + sizeof(int) + i * SizeOfYcsbOp +
                        sizeof(int),
                    sizeof(Key));
-            memcpy(reinterpret_cast<char*>(&op[i].wq),
-                   serial_str.char_ptr_ + sizeof(int) + i * SizeOfYcsbOp +
-                       sizeof(int) + sizeof(Key),
-                   sizeof(pair<uint64_t, char*>*));
+            if (op[i].type == YcsbUpdate) {
+                op[i].wq = (pair<int, char*>*)malloc(YCSB_TABLE_ITEMCOUNT *
+                                                     sizeof(pair<int, char*>));
+                for (auto j = 1; j < YCSB_TABLE_ITEMCOUNT; ++j) {
+                    memcpy(reinterpret_cast<char*>(&op[i].wq[j].first),
+                           serial_str.char_ptr_ + sizeof(int) +
+                               i * SizeOfYcsbOp + sizeof(int) + sizeof(Key) +
+                               (j - 1) * SizeOfpair,
+                           sizeof(int));
+                    op[i].wq[j].second =
+                        (char*)malloc(YCSB_TABLE_F_STRING_SIZE);
+                    memcpy(op[i].wq[j].second,
+                           serial_str.char_ptr_ + sizeof(int) +
+                               i * SizeOfYcsbOp + sizeof(int) + sizeof(Key) +
+                               (j - 1) * SizeOfpair + sizeof(int),
+                           YCSB_TABLE_F_STRING_SIZE);
+                }
+            }
         }
     }
 

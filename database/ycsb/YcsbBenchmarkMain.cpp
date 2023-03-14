@@ -91,11 +91,12 @@ int main(int argc, char *argv[]) {
         INIT_PROFILERS;
         YcsbExecutor executor(&redirector, &storage_manager, &ts_manager,
                               gThreadCount);
+        ok = true;
         executor.Start();
         REPORT_PROFILERS;
     }
     synchronizer.Fence();
-
+    ok = false;
     {
         // run workload
         INIT_PROFILERS;

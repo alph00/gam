@@ -5,6 +5,7 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #include "BenchmarkArguments.h"
 #include "IORedirector.h"
@@ -78,7 +79,7 @@ class BenchmarkSource {
         log_reloader.seekg(0, std::ios::beg);
         size_t file_pos = 0;
         CharArray entry;
-        entry.Allocate(10240);  // YcsbParam:392
+        entry.Allocate(10240);  // YcsbParam:5956->5380
         ParamBatch* tuples = new ParamBatch(gParamBatchSize);
         while (file_pos < file_size) {
             size_t param_type;
