@@ -2,6 +2,8 @@
 #ifndef __DATABASE_TPCC_TXN_PARAMS_H__
 #define __DATABASE_TPCC_TXN_PARAMS_H__
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 #include "CharArray.h"
@@ -54,7 +56,8 @@ class NewOrderParam : public TxnParam {
     virtual ~NewOrderParam() {}
     virtual void Serialize(CharArray& serial_str) const {
         serial_str.Allocate(sizeof(int) * 3 + sizeof(int64_t) + sizeof(size_t) +
-                            sizeof(int) * 45);
+                            sizeof(int) * 45 + sizeof(size_t) * 15 * 3 +
+                            sizeof(size_t) * 5);
         size_t offset = 0;
         serial_str.Memcpy(offset, reinterpret_cast<const char*>(&w_id_),
                           sizeof(int));
@@ -79,6 +82,39 @@ class NewOrderParam : public TxnParam {
         offset += sizeof(int) * 15;
         serial_str.Memcpy(offset, reinterpret_cast<const char*>(i_qtys_),
                           sizeof(int) * 15);
+        //
+        offset += sizeof(int) * 15;
+        serial_str.Memcpy(offset,
+                          reinterpret_cast<const char*>(item_access_type_),
+                          sizeof(size_t) * 15);
+        offset += sizeof(size_t) * 15;
+        serial_str.Memcpy(offset,
+                          reinterpret_cast<const char*>(stock_access_type_),
+                          sizeof(size_t) * 15);
+        offset += sizeof(size_t) * 15;
+        serial_str.Memcpy(
+            offset, reinterpret_cast<const char*>(&warehouse_access_type_),
+            sizeof(size_t));
+        offset += sizeof(size_t);
+        serial_str.Memcpy(offset,
+                          reinterpret_cast<const char*>(&district_access_type_),
+                          sizeof(size_t));
+        offset += sizeof(size_t);
+        serial_str.Memcpy(offset,
+                          reinterpret_cast<const char*>(&customer_access_type_),
+                          sizeof(size_t));
+        offset += sizeof(size_t);
+        serial_str.Memcpy(
+            offset, reinterpret_cast<const char*>(&new_order_access_type_),
+            sizeof(size_t));
+        offset += sizeof(size_t);
+        serial_str.Memcpy(offset,
+                          reinterpret_cast<const char*>(&order_access_type_),
+                          sizeof(size_t));
+        offset += sizeof(size_t);
+        serial_str.Memcpy(
+            offset, reinterpret_cast<const char*>(order_line_access_type_),
+            sizeof(size_t) * 15);
     }
 
     virtual void Deserialize(const CharArray& serial_str) {
@@ -106,6 +142,31 @@ class NewOrderParam : public TxnParam {
         offset += sizeof(int) * 15;
         memcpy(reinterpret_cast<char*>(i_qtys_), serial_str.char_ptr_ + offset,
                sizeof(int) * 15);
+        //
+        offset += sizeof(int) * 15;
+        memcpy(reinterpret_cast<char*>(item_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t) * 15);
+        offset += sizeof(size_t) * 15;
+        memcpy(reinterpret_cast<char*>(stock_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t) * 15);
+        offset += sizeof(size_t) * 15;
+        memcpy(reinterpret_cast<char*>(&warehouse_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(reinterpret_cast<char*>(&district_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(reinterpret_cast<char*>(&customer_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(reinterpret_cast<char*>(&new_order_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(reinterpret_cast<char*>(&order_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(reinterpret_cast<char*>(order_line_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t) * 15);
     }
 
    public:
@@ -143,7 +204,8 @@ class PaymentParam : public TxnParam {
     PaymentParam() { type_ = PAYMENT; }
     virtual ~PaymentParam() {}
     virtual void Serialize(CharArray& serial_str) const {
-        serial_str.Allocate(sizeof(int) * 5 + sizeof(double) + sizeof(int64_t));
+        serial_str.Allocate(sizeof(int) * 5 + sizeof(double) + sizeof(int64_t) +
+                            sizeof(size_t) * 4);
         size_t offset = 0;
         serial_str.Memcpy(offset, reinterpret_cast<const char*>(&w_id_),
                           sizeof(int));
@@ -165,6 +227,23 @@ class PaymentParam : public TxnParam {
         offset += sizeof(int);
         serial_str.Memcpy(offset, reinterpret_cast<const char*>(&h_date_),
                           sizeof(int64_t));
+        //
+        offset += sizeof(int64_t);
+        serial_str.Memcpy(
+            offset, reinterpret_cast<const char*>(&warehouse_access_type_),
+            sizeof(size_t));
+        offset += sizeof(size_t);
+        serial_str.Memcpy(offset,
+                          reinterpret_cast<const char*>(&district_access_type_),
+                          sizeof(size_t));
+        offset += sizeof(size_t);
+        serial_str.Memcpy(offset,
+                          reinterpret_cast<const char*>(&customer_access_type_),
+                          sizeof(size_t));
+        offset += sizeof(size_t);
+        serial_str.Memcpy(offset,
+                          reinterpret_cast<const char*>(&history_access_type_),
+                          sizeof(size_t));
     }
 
     virtual void Deserialize(const CharArray& serial_str) {
@@ -189,6 +268,19 @@ class PaymentParam : public TxnParam {
         offset += sizeof(int);
         memcpy(reinterpret_cast<char*>(&h_date_), serial_str.char_ptr_ + offset,
                sizeof(int64_t));
+        //
+        offset += sizeof(int64_t);
+        memcpy(reinterpret_cast<char*>(&warehouse_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(reinterpret_cast<char*>(&district_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(reinterpret_cast<char*>(&customer_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t));
+        offset += sizeof(size_t);
+        memcpy(reinterpret_cast<char*>(&history_access_type_),
+               serial_str.char_ptr_ + offset, sizeof(size_t));
     }
 
    public:

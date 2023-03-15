@@ -111,24 +111,20 @@ int main(int argc, char* argv[]) {
     //     std::vector<ParamBatch*>& execution_batches =
     //         *(redirector.GetParameterBatches(p));
     //     for (auto& tuples : execution_batches) {
-    //         if (enable_checkpoint_save) {
-    //             for (size_t i = 0; i < tuples->size(); ++i) {
-    //                 TxnParam* tuple = (tuples->get(i));
-    //                 CharArray param_chars;
-    //                 tuple->Serialize(param_chars);
-    //                 // write stored procedure type.
-    //                 size_t tuple_type = tuple->type_;
-    //                 output_file_.write((char*)(&tuple_type),
-    //                                    sizeof(tuple_type));
-    //                 // write parameter size.
-    //                 output_file_.write((char*)(&param_chars.size_),
-    //                                    sizeof(param_chars.size_));
-    //                 // write parameters.
-    //                 output_file_.write(param_chars.char_ptr_,
-    //                                    param_chars.size_);
-    //                 output_file_.flush();
-    //                 param_chars.Release();
-    //             }
+    //         for (size_t i = 0; i < tuples->size(); ++i) {
+    //             TxnParam* tuple = (tuples->get(i));
+    //             CharArray param_chars;
+    //             tuple->Serialize(param_chars);
+    //             // write stored procedure type.
+    //             size_t tuple_type = tuple->type_;
+    //             output_file_.write((char*)(&tuple_type), sizeof(tuple_type));
+    //             // write parameter size.
+    //             output_file_.write((char*)(&param_chars.size_),
+    //                                sizeof(param_chars.size_));
+    //             // write parameters.
+    //             output_file_.write(param_chars.char_ptr_, param_chars.size_);
+    //             output_file_.flush();
+    //             param_chars.Release();
     //         }
     //     }
     //     output_file_.close();
