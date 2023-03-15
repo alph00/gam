@@ -222,7 +222,6 @@ class HashIndex : public GAMObject {
                     TpccBenchmark::TableType::DISTRICT_NEW_ORDER_TABLE_ID) {
                     key = TpccBenchmark::GetDistrictNewOrderPrimaryKey(d_id,
                                                                        w_id);
-                    std::cout << ">>" << key << endl;
                     addr = SearchRecord(key, gallocator, 0);
                     record->Deserialize(addr, gallocator);
                     out_stream.write(record->GetDataPtr(), record_size);

@@ -252,7 +252,6 @@ class Table : public GAMObject {
                     record->GetColumn(1, &did);
                     IndexKey key =
                         TpccBenchmark::GetDistrictNewOrderPrimaryKey(did, wid);
-                    std::cout << "<<" << key << endl;
                     InsertRecord(&key, 1, data_addr, gallocator, 0);
                     delete table_record_buf;
                 }

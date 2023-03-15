@@ -46,6 +46,14 @@ qfs-kill.sh
 experiment-qfs.sh
 make_scp.sh
 
+# testdata
+database/ycsb/table_data*
+database/ycsb/txn_data*
+database/tpcc/table_data*
+database/tpcc/txn_data*
+database/ycsb/old.txt
+database/ycsb/new.txt
+
 test/lock_test
 database/tpcc/tpcc
 database/ycsb/ycsb

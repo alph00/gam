@@ -122,7 +122,7 @@ class StorageManager : public GAMObject {
     void SaveTableTpcc(const size_t& table_id, GAlloc* gallocator,
                        map<Key, int>* OrderLineCnts) {
         std::ofstream output_file(
-            filename_ + std::to_string(table_id) + std::string("save2"),
+            filename_ + std::to_string(table_id),  // + std::string("save2"),
             std::ofstream::binary);
         // assert(output_file.good() == true);
         tables_[table_id]->SaveCheckpointTpcc(output_file, gallocator,

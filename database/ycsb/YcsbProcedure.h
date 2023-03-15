@@ -31,7 +31,7 @@ class YcsbProcedure : public StoredProcedure {
         epicLog(LOG_DEBUG, "thread_id=%u,start ycsb", thread_id_);
         YcsbParam *ycsb_param = static_cast<YcsbParam *>(param);
         // execute
-        ofstream recordout("no-sense.txt", ios::app);
+        ofstream recordout("new.txt", ios::app);
         for (auto j = 0; j < ycsb_param->Txnlength; ++j) {
             if (ycsb_param->op[j].type == YcsbGet) {  // get
                 Record *record = nullptr;

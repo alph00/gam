@@ -44,7 +44,6 @@ class BenchmarkSource {
         } else {
             StartGeneration();
         }
-        // StartGeneration();
         timer.EndTimer();
         std::cout << "source elapsed time=" << timer.GetElapsedMilliSeconds()
                   << "ms" << std::endl;

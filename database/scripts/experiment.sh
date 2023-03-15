@@ -30,6 +30,9 @@ launch () {
   dist_ratio=$1
   output_file="${output_dir}/${dist_ratio}_tpcc.log"
   script="cd ${bin_dir} && ./tpcc ${USER_ARGS} -d${dist_ratio} > ${output_file} 2>&1"
+  # -ecps1  : 保存checkpoint
+  # -ecpr1  : 载入checkpoint
+  # 如果以上两个参数同时存在，只会执行载入操作
   
   echo "start master: ssh ${ssh_opts} ${master_host} "$script" &"
   ssh ${ssh_opts} ${master_host} "$script" &

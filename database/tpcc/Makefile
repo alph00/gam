@@ -14,8 +14,8 @@ PROFILE_OBJ = ../profiler/PhaseProfiler.o ../profiler/IndexTimeProfiler.o ../pro
 TXN_SRC = ../txn/TransactionManager2PL.cpp ../txn/TransactionManagerLockWait.cpp ../txn/TransactionManagerST.cpp ../txn/TransactionManagerOcc.cpp ../txn/TransactionManagerSilo.cpp
 TXN_OBJ = ../txn/TransactionManager2PL.o ../txn/TransactionManagerLockWait.o ../txn/TransactionManagerST.o ../txn/TransactionManagerOcc.o ../txn/TransactionManagerSilo.o
 
-SRC = TpccBenchmarkMain.cpp TpccRandomGenerator.cpp ../Meta.cpp ${TXN_SRC} ${PROFILE_SRC} #../utils/Profiler.cpp
-OBJ = TpccBenchmarkMain.o TpccRandomGenerator.o ../Meta.o ${TXN_OBJ} ${PROFILE_OBJ} #../utils/Profiler.o 
+SRC = TpccBenchmarkMain.cpp TpccRandomGenerator.cpp TpccParams.cpp ../Meta.cpp ${TXN_SRC} ${PROFILE_SRC} #../utils/Profiler.cpp
+OBJ = TpccBenchmarkMain.o TpccRandomGenerator.o TpccParams.o ../Meta.o ${TXN_OBJ} ${PROFILE_OBJ} #../utils/Profiler.o 
 
 $(OBJ): %.o : %.cpp
 	$(CPP) $< $(CFLAGS) $(INCLUDE) -g -c -o $@
