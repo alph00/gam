@@ -10,6 +10,7 @@
 #include "ClusterConfig.h"
 #include "Table.h"
 #include "gallocator.h"
+#include "structure.h"
 
 namespace Database {
 class StorageManager : public GAMObject {
@@ -93,11 +94,18 @@ class StorageManager : public GAMObject {
             }
         }
     }
-
-    void ReloadCheckpoint() {
+    void SaveCheckpointTpcc(GAlloc* gallocator, map<Key, int>* OrderLineCnts) {
         for (size_t i = 0; i < table_count_; ++i) {
             if (tables_[i] != NULL) {
-                ReloadTable(i);
+                SaveTableTpcc(i, gallocator, OrderLineCnts);
+            }
+        }
+    }
+
+    void ReloadCheckpointTpcc() {
+        for (size_t i = 0; i < table_count_; ++i) {
+            if (tables_[i] != NULL) {
+                ReloadTableTpcc(i);
             }
         }
     }
@@ -111,11 +119,22 @@ class StorageManager : public GAMObject {
         output_file.close();
     }
 
-    void ReloadTable(const size_t& table_id) {
+    void SaveTableTpcc(const size_t& table_id, GAlloc* gallocator,
+                       map<Key, int>* OrderLineCnts) {
+        std::ofstream output_file(
+            filename_ + std::to_string(table_id) + std::string("save2"),
+            std::ofstream::binary);
+        // assert(output_file.good() == true);
+        tables_[table_id]->SaveCheckpointTpcc(output_file, gallocator,
+                                              OrderLineCnts);
+        output_file.close();
+    }
+
+    void ReloadTableTpcc(const size_t& table_id) {
         std::ifstream input_file(filename_ + std::to_string(table_id),
                                  std::ifstream::binary);
         assert(input_file.good() == true);
-        tables_[table_id]->ReloadCheckpoint(input_file);
+        tables_[table_id]->ReloadCheckpointTpcc(input_file);
         input_file.close();
     }
 

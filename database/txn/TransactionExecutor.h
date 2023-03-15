@@ -101,10 +101,15 @@ class TransactionExecutor {
     }
 
     virtual void ProcessQueryThread(const size_t& thread_id) {
+        ofstream output_file_;
+        if (enable_checkpoint_save && ok) {
+            output_file_.open("txn_data" + std::string("source_save_2"),
+                              std::ofstream::binary);
+        }
+
         // std::cout << "start thread " << thread_id << std::endl;
         std::vector<ParamBatch*>& execution_batches =
             *(redirector_ptr_->GetParameterBatches(thread_id));
-
         TransactionManager* txn_manager = new TransactionManager(
             storage_manager_, ts_manager_, this->thread_count_, thread_id);
         StoredProcedure** procedures = new StoredProcedure*[registers_.size()];
@@ -122,6 +127,26 @@ class TransactionExecutor {
         CharArray ret;
         ret.char_ptr_ = new char[1024];
         for (auto& tuples : execution_batches) {
+            if (enable_checkpoint_save && ok) {
+                for (size_t i = 0; i < tuples->size(); ++i) {
+                    TxnParam* tuple = (tuples->get(i));
+                    CharArray param_chars;
+                    tuple->Serialize(param_chars);
+                    // write stored procedure type.
+                    size_t tuple_type = tuple->type_;
+                    output_file_.write((char*)(&tuple_type),
+                                       sizeof(tuple_type));
+                    // write parameter size.
+                    output_file_.write((char*)(&param_chars.size_),
+                                       sizeof(param_chars.size_));
+                    // write parameters.
+                    output_file_.write(param_chars.char_ptr_,
+                                       param_chars.size_);
+                    output_file_.flush();
+                    param_chars.Release();
+                }
+            }
+
             for (size_t idx = 0; idx < tuples->size(); ++idx) {
                 TxnParam* tuple = tuples->get(idx);
                 // begin txn
@@ -202,6 +227,7 @@ class TransactionExecutor {
         time_lock_.unlock();
         total_count_ += count;
         total_abort_count_ += abort_count;
+        output_file_.close();
         // txn_manager->CleanUp();
         return;
     }

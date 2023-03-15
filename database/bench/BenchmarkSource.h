@@ -35,14 +35,16 @@ class BenchmarkSource {
             ReloadFromDisk();
         } else if (enable_checkpoint_save) {
             // generate params and dump to file.
-            output_file_.open(source_filename_, std::ofstream::binary);
+            output_file_.open(
+                source_filename_,  //+ std::string("source_save_2"),
+                std::ofstream::binary);
             // assert(output_file_.good() == true);
             StartGeneration();
             output_file_.close();
         } else {
             StartGeneration();
         }
-        StartGeneration();
+        // StartGeneration();
         timer.EndTimer();
         std::cout << "source elapsed time=" << timer.GetElapsedMilliSeconds()
                   << "ms" << std::endl;

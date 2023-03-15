@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 
 #include "BenchmarkArguments.h"
@@ -65,9 +66,10 @@ int main(int argc, char* argv[]) {
 
     // populate database
     // INIT_PROFILE_TIME(gThreadCount);
-    if (enable_checkpoint_reload) {
+    // if (enable_checkpoint_reload) {
+    if (0) {
         INIT_PROFILERS;
-        storage_manager.ReloadCheckpoint();
+        storage_manager.ReloadCheckpointTpcc();
         REPORT_PROFILERS;
     } else {
         INIT_PROFILERS;
@@ -79,11 +81,14 @@ int main(int argc, char* argv[]) {
     }
     synchronizer.Fence();
 
-    if (enable_checkpoint_save) {
-        storage_manager.SaveCheckpoint(
-            gallocators[0]);  // to qfs 这里的gallocators应该用这个吗?
-        synchronizer.Fence();
-    }
+    // if (enable_checkpoint_save) {
+    //     map<Key, int> OrderLineCnts;
+    //     storage_manager.SaveCheckpointTpcc(
+    //         gallocators[0],
+    //         &OrderLineCnts);  // to qfs 这里的gallocators应该用这个吗?
+    //     synchronizer.Fence();
+    //     OrderLineCnts.clear();
+    // }
 
     // generate workload
     IORedirector redirector(gThreadCount);
@@ -104,13 +109,12 @@ int main(int argc, char* argv[]) {
                               gThreadCount);
         executor.Start();
         // REPORT_PROFILE_TIME(gThreadCount);
-        ok = true;
         REPORT_PROFILERS;
     }
-    ok = false;
     synchronizer.Fence();
 
     {
+        ok = true;
         // run workload
         // INIT_PROFILE_TIME(gThreadCount);
         INIT_PROFILERS;
@@ -122,6 +126,7 @@ int main(int argc, char* argv[]) {
         ExchPerfStatistics(&config, &synchronizer,
                            &executor.GetPerfStatistics());
     }
+    ok = false;
 
     std::cout << "prepare to exit..." << std::endl;
     synchronizer.Fence();

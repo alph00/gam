@@ -1,14 +1,20 @@
 #ifndef __DATABASE_STORAGE_HASH_INDEX_H__
 #define __DATABASE_STORAGE_HASH_INDEX_H__
 
+#include <fstream>
+
 #include "GAddrArray.h"
 #include "HashIndexHelper.h"
+
 // #include "Profiler.h"
 #include "Profilers.h"
 #include "Record.h"
 #include "RecordSchema.h"
 #include "gallocator.h"
 #include "structure.h"
+#include "tpcc/TpccConstants.h"
+#include "tpcc/TpccKeyGenerator.h"
+#include "tpcc/TpccParams.h"
 
 namespace Database {
 class HashIndex : public GAMObject {
@@ -128,6 +134,157 @@ class HashIndex : public GAMObject {
             record->Deserialize(addr, gallocator);
             out_stream.write(record->GetDataPtr(), record_size);
         }
+        delete record;
+        record = nullptr;
+        out_stream.flush();
+    }
+
+    void SaveCheckpointTpcc(std::ofstream& out_stream,
+                            const size_t& record_size, GAlloc* gallocator,
+                            RecordSchema* schema,
+                            map<Key, int>* OrderLineCnts) {
+        Record* record = new Record(schema);
+        //
+        TpccBenchmark::TpccScaleParams* scale_params_ =
+            &TpccBenchmark::tpcc_scale_params;
+        IndexKey key;
+        GAddr addr;
+
+        if (schema->GetTableId() == TpccBenchmark::TableType::ITEM_TABLE_ID) {
+            for (int item_id = 1; item_id <= scale_params_->num_items_;
+                 ++item_id) {
+                for (int w_id = scale_params_->starting_warehouse_;
+                     w_id <= scale_params_->ending_warehouse_; ++w_id) {
+                    key = TpccBenchmark::GetItemPrimaryKey(item_id, w_id);
+                    addr = SearchRecord(key, gallocator, 0);
+                    record->Deserialize(addr, gallocator);
+                    out_stream.write(record->GetDataPtr(), record_size);
+
+                    // int a0, a1;
+                    // char a2[33];
+                    // double a3;
+                    // char a4[65];
+                    // record->GetColumn(0, &a0);
+                    // record->GetColumn(1, &a1);
+                    // record->GetColumn(2, a2);
+                    // a2[32] = '\0';
+                    // record->GetColumn(3, &a3);
+                    // record->GetColumn(4, a4);
+                    // a4[64] = '\0';
+                    // ofstream testout("table_data0_save2.txt", ios::app);
+                    // testout << "~~" << a0 << " $ " << a1 << " $ " << a2 << "
+                    // $ "
+                    //         << a3 << " $ " << a4 << endl;
+                    // testout.close();
+                }
+            }
+        }
+        // load warehouses
+        for (int w_id = scale_params_->starting_warehouse_;
+             w_id <= scale_params_->ending_warehouse_; ++w_id) {
+            if (schema->GetTableId() ==
+                TpccBenchmark::TableType::WAREHOUSE_TABLE_ID) {
+                key = TpccBenchmark::GetWarehousePrimaryKey(w_id);
+                addr = SearchRecord(key, gallocator, 0);
+                record->Deserialize(addr, gallocator);
+                out_stream.write(record->GetDataPtr(), record_size);
+            }
+            for (int d_id = 1;
+                 d_id <= scale_params_->num_districts_per_warehouse_; ++d_id) {
+                if (schema->GetTableId() ==
+                    TpccBenchmark::TableType::DISTRICT_TABLE_ID) {
+                    key = TpccBenchmark::GetDistrictPrimaryKey(d_id, w_id);
+                    addr = SearchRecord(key, gallocator, 0);
+                    record->Deserialize(addr, gallocator);
+                    out_stream.write(record->GetDataPtr(), record_size);
+                }
+                for (int c_id = 1;
+                     c_id <= scale_params_->num_customers_per_district_;
+                     ++c_id) {
+                    if (schema->GetTableId() ==
+                        TpccBenchmark::TableType::CUSTOMER_TABLE_ID) {
+                        key = TpccBenchmark::GetCustomerPrimaryKey(c_id, d_id,
+                                                                   w_id);
+                        addr = SearchRecord(key, gallocator, 0);
+                        record->Deserialize(addr, gallocator);
+                        out_stream.write(record->GetDataPtr(), record_size);
+                    }
+                    if (schema->GetTableId() ==
+                        TpccBenchmark::TableType::HISTORY_TABLE_ID) {
+                        key = TpccBenchmark::GetHistoryPrimaryKey(c_id, d_id,
+                                                                  w_id);
+                        addr = SearchRecord(key, gallocator, 0);
+                        record->Deserialize(addr, gallocator);
+                        out_stream.write(record->GetDataPtr(), record_size);
+                    }
+                }
+                if (schema->GetTableId() ==
+                    TpccBenchmark::TableType::DISTRICT_NEW_ORDER_TABLE_ID) {
+                    key = TpccBenchmark::GetDistrictNewOrderPrimaryKey(d_id,
+                                                                       w_id);
+                    std::cout << ">>" << key << endl;
+                    addr = SearchRecord(key, gallocator, 0);
+                    record->Deserialize(addr, gallocator);
+                    out_stream.write(record->GetDataPtr(), record_size);
+                }
+
+                int initial_new_order_id =
+                    scale_params_->num_customers_per_district_ -
+                    scale_params_->num_new_orders_per_district_ + 1;
+
+                for (int o_id = 1;
+                     o_id <= scale_params_->num_customers_per_district_;
+                     ++o_id) {
+                    if (schema->GetTableId() ==
+                        TpccBenchmark::TableType::ORDER_TABLE_ID) {
+                        key =
+                            TpccBenchmark::GetOrderPrimaryKey(o_id, d_id, w_id);
+                        addr = SearchRecord(key, gallocator, 0);
+                        record->Deserialize(addr, gallocator);
+                        out_stream.write(record->GetDataPtr(), record_size);
+                        int cnt = -1;
+                        record->GetColumn(6, &cnt);
+                        (*OrderLineCnts)[key] = cnt;
+                    }
+                    if (schema->GetTableId() ==
+                        TpccBenchmark::TableType::ORDER_LINE_TABLE_ID) {
+                        IndexKey Orderkey =
+                            TpccBenchmark::GetOrderPrimaryKey(o_id, d_id, w_id);
+                        for (int ol_number = 1;
+                             ol_number <= (*OrderLineCnts)[Orderkey];
+                             ++ol_number) {
+                            key = TpccBenchmark::GetOrderLinePrimaryKey(
+                                o_id, d_id, w_id, ol_number);
+                            addr = SearchRecord(key, gallocator, 0);
+                            record->Deserialize(addr, gallocator);
+                            out_stream.write(record->GetDataPtr(), record_size);
+                        }
+                    }
+                    if (schema->GetTableId() ==
+                        TpccBenchmark::TableType::NEW_ORDER_TABLE_ID) {
+                        bool is_new_order = (o_id >= initial_new_order_id);
+                        if (is_new_order) {
+                            key = TpccBenchmark::GetNewOrderPrimaryKey(
+                                o_id, d_id, w_id);
+                            addr = SearchRecord(key, gallocator, 0);
+                            record->Deserialize(addr, gallocator);
+                            out_stream.write(record->GetDataPtr(), record_size);
+                        }
+                    }
+                }
+            }
+
+            if (schema->GetTableId() ==
+                TpccBenchmark::TableType::STOCK_TABLE_ID) {
+                for (int i_id = 1; i_id <= scale_params_->num_items_; ++i_id) {
+                    key = TpccBenchmark::GetStockPrimaryKey(i_id, w_id);
+                    addr = SearchRecord(key, gallocator, 0);
+                    record->Deserialize(addr, gallocator);
+                    out_stream.write(record->GetDataPtr(), record_size);
+                }
+            }
+        }
+        //
         delete record;
         record = nullptr;
         out_stream.flush();

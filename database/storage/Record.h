@@ -2,6 +2,8 @@
 #ifndef __DATABASE_STORAGE_RECORD_H__
 #define __DATABASE_STORAGE_RECORD_H__
 
+#include <cstring>
+
 #include "CharArray.h"
 #include "GAMObject.h"
 #include "Meta.h"
@@ -18,7 +20,8 @@ class Record : public GAMObject {
     }
     Record(RecordSchema *schema_ptr, char *data_ptr) : schema_ptr_(schema_ptr) {
         data_size_ = schema_ptr_->GetSchemaSize();
-        data_ptr_ = data_ptr;
+        data_ptr_ = new char[data_size_];
+        memcpy(data_ptr_, data_ptr, data_size_);
     }
     ~Record() { Release(); }
 
@@ -72,6 +75,7 @@ class Record : public GAMObject {
 
     size_t GetSerializeSize() const { return schema_ptr_->GetSchemaSize(); }
     char *GetDataPtr() { return data_ptr_; }
+    void SetDataPtr(char *data_ptr) { memcpy(data_ptr_, data_ptr, data_size_); }
 
    private:
     Record(const Record &);
