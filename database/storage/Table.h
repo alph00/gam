@@ -237,7 +237,7 @@ class Table : public GAMObject {
             } else if (schema_ptr_->GetTableId() ==
                        TpccBenchmark::TableType::DISTRICT_NEW_ORDER_TABLE_ID) {
                 int wid = -1;
-                record->GetColumn(0, &wid);
+                record->GetColumn(1, &wid);
                 if (wid >=
                         TpccBenchmark::tpcc_scale_params.starting_warehouse_ &&
                     wid <= TpccBenchmark::tpcc_scale_params.ending_warehouse_) {
@@ -249,7 +249,7 @@ class Table : public GAMObject {
                     record_buf->SetVisible(true);
                     record_buf->Serialize(data_addr, gallocator);
                     int did = -1;
-                    record->GetColumn(1, &did);
+                    record->GetColumn(0, &did);
                     IndexKey key =
                         TpccBenchmark::GetDistrictNewOrderPrimaryKey(did, wid);
                     InsertRecord(&key, 1, data_addr, gallocator, 0);

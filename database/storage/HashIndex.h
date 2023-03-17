@@ -15,6 +15,7 @@
 #include "tpcc/TpccConstants.h"
 #include "tpcc/TpccKeyGenerator.h"
 #include "tpcc/TpccParams.h"
+#include "ycsb/YcsbParameter.h"
 
 namespace Database {
 class HashIndex : public GAMObject {
@@ -129,7 +130,7 @@ class HashIndex : public GAMObject {
     void SaveCheckpoint(std::ofstream& out_stream, const size_t& record_size,
                         GAlloc* gallocator, RecordSchema* schema) {
         Record* record = new Record(schema);
-        for (auto i = 0; i < record_count_; ++i) {
+        for (auto i = 0; i < YCSB_TABLE_LENTH; ++i) {
             GAddr addr = SearchRecord((Key)i, gallocator, 0);
             record->Deserialize(addr, gallocator);
             out_stream.write(record->GetDataPtr(), record_size);
